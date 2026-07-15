@@ -156,18 +156,16 @@ with st.container():
     
     st.markdown("### 📋 Cantidad de Bajas por Galpón")
     
-    # Entradas de texto numérico para cada galpón.
-    # Usar st.text_input nos permite controlar con exactitud si el usuario escribe letras o guiones
     entradas_crudas = {}
     
     col1, col2 = st.columns(2)
     with col1:
-        entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas de vida)", value="", placeholder="Escribe un número...")
-        entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2 (42 semanas de vida)", value="", placeholder="Escribe un número...")
+        entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
+        entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2 (42 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
         
     with col2:
-        entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3 (16 semanas de vida)", value="", placeholder="Escribe un número...")
-        entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4 (56 semanas de vida)", value="", placeholder="Escribe un número...")
+        entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3 (16 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
+        entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4 (56 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
         
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -185,17 +183,19 @@ with st.container():
     
     if guardar:
         valores_invalidos = False
-        bajas_activas = {}
+        campos_vacios = False
+        payload_data = {}
         
+        # Primero revisamos si hay campos vacíos
         for galpon_name, valor_crudo in entradas_crudas.items():
             valor_limpio = valor_crudo.strip()
             
-            # Si el usuario dejó el campo vacío, lo ignoramos
+            # SI ALGÚN CAMPO ESTÁ VACÍO, SE MARCA COMO ERROR
             if not valor_limpio:
-                continue
+                campos_vacios = True
+                break
                 
             # Validar de forma súper estricta que solo contenga dígitos numéricos (del 0 al 9)
-            # Esto bloquea automáticamente letras, espacios intermedios, puntos, comas y el signo menos (-)
             if not valor_limpio.isdigit():
                 valores_invalidos = True
                 break
@@ -205,23 +205,22 @@ with st.container():
                 if qty < 0:
                     valores_invalidos = True
                     break
-                elif qty > 0:
-                    bajas_activas[galpon_name] = qty
+                else:
+                    payload_data[galpon_name] = qty
             except ValueError:
                 valores_invalidos = True
                 break
         
-        if valores_invalidos:
+        if campos_vacios:
+            st.error("⚠️ ¡Atención! Debes llenar los 4 cuadros (si no hay bajas en un galpón, escribe '0').")
+        elif valores_invalidos:
             st.session_state.mostrar_error = True
-        elif not bajas_activas:
-            st.error("⚠️ Debes ingresar al menos una baja (cantidad mayor a 0) en algún galpón para poder guardar.")
         else:
             st.session_state.mostrar_error = False  # Limpiar error si todo es correcto
             supabase_client, error_msg = get_supabase_client()
             
             if error_msg:
                 st.error(f"❌ Error de configuración: {error_msg}")
-                st.info("💡 Por favor, asegúrate de configurar 'SUPABASE_URL' y 'SUPABASE_KEY' en la pestaña de Secretos (Secrets) de Streamlit.")
             elif not supabase_client:
                 st.error("❌ No se pudo conectar a la base de datos Supabase.")
             else:
@@ -229,7 +228,8 @@ with st.container():
                 with st.spinner("Enviando datos al servidor..."):
                     try:
                         payload = []
-                        for galpon_name, qty in bajas_activas.items():
+                        # Ahora procesamos TODOS los galpones (incluso los que se registraron con 0)
+                        for galpon_name, qty in payload_data.items():
                             numero_galpon = int(galpon_name.replace("Galpón ", ""))
                             payload.append({
                                 "galpon": numero_galpon,
@@ -243,14 +243,13 @@ with st.container():
                         st.markdown(f"""
                             <div class="success-box">
                                 🎉 ¡Registros Guardados con Éxito!<br>
-                                <span style="font-size: 13px; font-weight: normal;">Se registraron las bajas de {len(bajas_activas)} galpón(es) correctamente en Supabase.</span>
+                                <span style="font-size: 13px; font-weight: normal;">Se registraron los datos de los 4 galpones correctamente en Supabase.</span>
                             </div>
                         """, unsafe_allow_html=True)
                         st.balloons()
                         
                     except Exception as e:
                         st.error(f"❌ Error al insertar datos en la base de datos: {str(e)}")
-                        st.info("Verifica que la tabla 'registro_bajas' exista en Supabase con las columnas: galpon (text), cantidad_muertas (integer) y observacion (text).")
 
     # Muestra el aviso de error con el botón rojo para corregir el dato
     if st.session_state.mostrar_error:
