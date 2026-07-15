@@ -166,11 +166,14 @@ with st.container():
                     try:
                         payload = []
                         for galpon_name, qty in bajas_activas.items():
+                            numero_galpon = int(galpon_name.replace("Galpón ", ""))
                             payload.append({
-                                "galpon": galpon_name,
+                                "galpon": numero_galpon,
                                 "cantidad_muertas": int(qty),
                                 "observacion": observacion.strip() if observacion else ""
                             })
+                        
+    
                         
                         response = supabase_client.table("registro_bajas").insert(payload).execute()
                         
