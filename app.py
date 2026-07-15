@@ -13,6 +13,21 @@ st.set_page_config(
 # Estilos CSS personalizados para UI tipo Soft-UI/Tarjeta, responsivo y adaptado para celulares
 st.markdown("""
 <style>
+    /* Ocultar el menú de tres puntos (opciones de desarrollo) */
+    #MainMenu {
+        visibility: hidden;
+    }
+    
+    /* Ocultar la barra de estado superior de Streamlit */
+    header {
+        visibility: hidden;
+    }
+    
+    /* Ocultar el pie de página de Streamlit ("Made with Streamlit") */
+    footer {
+        visibility: hidden;
+    }
+     
     /* Estilo del fondo de la aplicación */
     .stApp {
         background-color: #f8fafc;
