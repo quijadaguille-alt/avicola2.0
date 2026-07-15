@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from datetime import datetime
+from datetime import datetime, date
 import pytz
 from supabase import create_client, Client
 
@@ -60,8 +60,8 @@ st.markdown("""
         margin-bottom: 24px;
     }
     
-    /* Estilos para selectores y áreas de texto */
-    div[data-baseweb="select"] {
+    /* Estilos para selectores, áreas de texto e inputs de fecha */
+    div[data-baseweb="select"], div[data-baseweb="input"] {
         border-radius: 10px;
     }
     
@@ -171,9 +171,9 @@ if "datos_temporales" not in st.session_state:
 if "registro_previo" not in st.session_state:
     st.session_state.registro_previo = None
 
-# Obtener fecha actual en zona horaria de Chile para la verificación
+# Obtener fecha actual en zona horaria de Chile por defecto
 tz_chile = pytz.timezone('America/Santiago')
-fecha_hoy = datetime.now(tz_chile).strftime('%Y-%m-%d')
+fecha_hoy_default = datetime.now(tz_chile).date()
 
 # Renderizado de la UI en la tarjeta principal
 with st.container():
@@ -181,6 +181,11 @@ with st.container():
     
     st.markdown('<div class="header-title">🐔 Avícola Santa Valentina</div>', unsafe_allow_html=True)
     st.markdown('<div class="header-subtitle">Registro rápido de bajas por galpón</div>', unsafe_allow_html=True)
+    
+    st.markdown("### 📅 Fecha de Registro")
+    # Nuevo Selector de Fecha (viene por defecto con la fecha de hoy de Chile)
+    fecha_seleccionada = st.date_input("Selecciona el día de las bajas", value=fecha_hoy_default)
+    fecha_str = fecha_seleccionada.strftime('%Y-%m-%d')
     
     st.markdown("### 📋 Cantidad de Bajas por Galpón")
     
@@ -207,7 +212,6 @@ with st.container():
     st.markdown("<br>", unsafe_allow_html=True)
     
     # 1. BOTÓN PRINCIPAL: GUARDAR REGISTRO
-    # Este botón siempre está visible y activo
     guardar = st.button("💾 Guardar Registro", use_container_width=True)
     
     # Función que limpia y valida los datos
@@ -250,22 +254,24 @@ with st.container():
         else:
             st.session_state.mostrar_error = False
             
-            # Consultar si ya hay registros de hoy en Supabase antes de guardar
+            # Consultar en Supabase si ya hay datos de la fecha seleccionada
             supabase_client, error_msg = get_supabase_client()
             if supabase_client and not error_msg:
                 try:
-                    response_check = supabase_client.table("registro_bajas").select("fecha, hora").eq("fecha", fecha_hoy).limit(1).execute()
+                    # Usamos la fecha_str que viene del st.date_input
+                    response_check = supabase_client.table("registro_bajas").select("fecha, hora").eq("fecha", fecha_str).limit(1).execute()
                     
                     if response_check.data:
-                        # ¡Ya hay registro hoy! Guardamos datos temporalmente en memoria y activamos advertencia
+                        # ¡Ya existe registro para esta fecha seleccionada! Guardamos datos temporalmente en memoria
                         st.session_state.registro_previo = response_check.data[0]
                         st.session_state.datos_temporales = {
                             "payload_data": payload_data,
-                            "observacion": observacion
+                            "observacion": observacion,
+                            "fecha": fecha_str
                         }
                         st.session_state.confirmacion_sobreescribir = True
                     else:
-                        # No hay registros hoy: Guardar directamente
+                        # No hay registros en esta fecha: Guardar directamente
                         st.session_state.confirmacion_sobreescribir = False
                         with st.spinner("Enviando datos al servidor..."):
                             payload = []
@@ -274,78 +280,85 @@ with st.container():
                                 payload.append({
                                     "galpon": numero_galpon,
                                     "cantidad_muertas": qty,
-                                    "observacion": observacion.strip() if observacion else ""
+                                    "observacion": observacion.strip() if observacion else "",
+                                    "fecha": fecha_str  # Guardar la fecha del selector
                                 })
                             
                             supabase_client.table("registro_bajas").insert(payload).execute()
                             st.markdown("""
                                 <div class="success-box">
                                     🎉 ¡Registros Guardados con Éxito!<br>
-                                    <span style="font-size: 13px; font-weight: normal;">Se registraron las bajas de los 4 galpones correctamente en Supabase.</span>
+                                    <span style="font-size: 13px; font-weight: normal;">Se registraron las bajas correctamente en Supabase.</span>
                                 </div>
                             """, unsafe_allow_html=True)
                             st.balloons()
                 except Exception as e:
                     st.error(f"❌ Error al consultar la base de datos: {str(e)}")
 
-    # 2. BLOQUE DE ADVERTENCIA DE SOBRESCRITURA (Aparece dinámicamente si ya hay datos hoy)
+    # 2. BLOQUE DE ADVERTENCIA DE SOBRESCRITURA (Aparece dinámicamente si ya hay datos de esa fecha)
     if st.session_state.confirmacion_sobreescribir and st.session_state.registro_previo:
         registro = st.session_state.registro_previo
+        temp_data = st.session_state.datos_temporales
         
-        # Formatear la hora de forma amigable
-        hora_cruda = datetime.strptime(registro['hora'], "%H:%M:%S.%f" if "." in registro['hora'] else "%H:%M:%S")
-        hora_formateada = hora_cruda.strftime("%H:%M")
-        
-        # Mapeo del día en español
-        dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-        dia_nombre = dias_semana[datetime.strptime(registro['fecha'], '%Y-%m-%d').weekday()]
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.warning(f"⚠️ ¡Atención! Ya se envió un registro hoy **{dia_nombre} {datetime.strptime(registro['fecha'], '%Y-%m-%d').strftime('%d/%m')}** a las **{hora_formateada} hrs**.")
-        st.info("Si continúas, los datos anteriores de hoy serán borrados por completo de la base de datos y se guardarán los nuevos.")
-        
-        # Botón amarillo para ejecutar la sobrescritura
-        st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
-        ejecutar_sobreescritura = st.button("⚠️ Sí, deseo sobrescribir los datos de hoy", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        if ejecutar_sobreescritura:
-            supabase_client, error_msg = get_supabase_client()
-            temp_data = st.session_state.datos_temporales
+        # Asegurarse de que la advertencia corresponda a la fecha seleccionada actualmente
+        if temp_data and temp_data["fecha"] == fecha_str:
+            # Formatear la hora de forma amigable
+            hora_cruda = datetime.strptime(registro['hora'], "%H:%M:%S.%f" if "." in registro['hora'] else "%H:%M:%S")
+            hora_formateada = hora_cruda.strftime("%H:%M")
             
-            if supabase_client and temp_data:
-                with st.spinner("Actualizando datos en el servidor..."):
-                    try:
-                        # 1. Borrar registros de hoy
-                        supabase_client.table("registro_bajas").delete().eq("fecha", fecha_hoy).execute()
-                        
-                        # 2. Insertar los nuevos registros
-                        payload = []
-                        for galpon_name, qty in temp_data["payload_data"].items():
-                            numero_galpon = int(galpon_name.replace("Galpón ", ""))
-                            payload.append({
-                                "galpon": numero_galpon,
-                                "cantidad_muertas": qty,
-                                "observacion": temp_data["observacion"].strip() if temp_data["observacion"] else ""
-                            })
-                        
-                        supabase_client.table("registro_bajas").insert(payload).execute()
-                        
-                        # Limpiar variables de estado
-                        st.session_state.confirmacion_sobreescribir = False
-                        st.session_state.datos_temporales = None
-                        st.session_state.registro_previo = None
-                        
-                        st.markdown("""
-                            <div class="success-box">
-                                🎉 ¡Datos Guardados y Actualizados con Éxito!<br>
-                                <span style="font-size: 13px; font-weight: normal;">Los registros anteriores de hoy fueron actualizados correctamente en Supabase.</span>
-                            </div>
-                        """, unsafe_allow_html=True)
-                        st.balloons()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al sobrescribir los datos: {str(e)}")
+            # Mapeo del día en español
+            dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+            dia_nombre = dias_semana[datetime.strptime(registro['fecha'], '%Y-%m-%d').weekday()]
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.warning(f"⚠️ ¡Atención! Ya se envió un registro para la fecha **{dia_nombre} {datetime.strptime(registro['fecha'], '%Y-%m-%d').strftime('%d/%m')}** (guardado originalmente a las **{hora_formateada} hrs**).")
+            st.info("Si continúas, los datos de ese día serán borrados por completo y se guardarán los nuevos números.")
+            
+            # Botón amarillo para ejecutar la sobrescritura
+            st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
+            ejecutar_sobreescritura = st.button("⚠️ Sí, deseo sobrescribir los datos de hoy", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            if ejecutar_sobreescritura:
+                supabase_client, error_msg = get_supabase_client()
+                
+                if supabase_client and temp_data:
+                    with st.spinner("Actualizando datos en el servidor..."):
+                        try:
+                            # 1. Borrar registros de la fecha seleccionada
+                            supabase_client.table("registro_bajas").delete().eq("fecha", fecha_str).execute()
+                            
+                            # 2. Insertar los nuevos registros
+                            payload = []
+                            for galpon_name, qty in temp_data["payload_data"].items():
+                                numero_galpon = int(galpon_name.replace("Galpón ", ""))
+                                payload.append({
+                                    "galpon": numero_galpon,
+                                    "cantidad_muertas": qty,
+                                    "observacion": temp_data["observacion"].strip() if temp_data["observacion"] else "",
+                                    "fecha": fecha_str  # Insertar la fecha correcta del selector
+                                })
+                            
+                            supabase_client.table("registro_bajas").insert(payload).execute()
+                            
+                            # Limpiar variables de estado
+                            st.session_state.confirmacion_sobreescribir = False
+                            st.session_state.datos_temporales = None
+                            st.session_state.registro_previo = None
+                            
+                            st.markdown("""
+                                <div class="success-box">
+                                    🎉 ¡Datos Guardados y Actualizados con Éxito!<br>
+                                    <span style="font-size: 13px; font-weight: normal;">Los registros anteriores de esa fecha fueron actualizados correctamente en Supabase.</span>
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.balloons()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error al sobrescribir los datos: {str(e)}")
+        else:
+            # Si el usuario cambió la fecha seleccionada en el date_input, limpiamos la confirmación previa
+            st.session_state.confirmacion_sobreescribir = False
 
     # 3. MUESTRA EL AVISO DE ERROR SI SE DETECTAN LETRAS, NEGATIVOS O DECIMALES
     if st.session_state.mostrar_error:
