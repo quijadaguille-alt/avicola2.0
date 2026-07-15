@@ -125,12 +125,12 @@ with st.container():
     
     col1, col2 = st.columns(2)
     with col1:
-        cantidades["Galpón 1"] = st.number_input("🏠 Galpón 1 (24 semanas de vida)", min_value=0, max_value=1000, value=none, step=1)
-        cantidades["Galpón 2"] = st.number_input("🥚 Galpón 2 (42 semanas de vida)", min_value=0, max_value=1000, value=none, step=1)
+        cantidades["Galpón 1"] = st.number_input("🏠 Galpón 1 (24 semanas de vida)", min_value=0, max_value=1000, value=None, step=1)
+        cantidades["Galpón 2"] = st.number_input("🥚 Galpón 2 (42 semanas de vida)", min_value=0, max_value=1000, value=None, step=1)
         
     with col2:
-        cantidades["Galpón 3"] = st.number_input("🌽 Galpón 3 (16 semanas de vida)", min_value=0, max_value=1000, value=none, step=1)
-        cantidades["Galpón 4"] = st.number_input("🚜 Galpón 4 (56 semanas de vida)", min_value=0, max_value=1000, value=none, step=1)
+        cantidades["Galpón 3"] = st.number_input("🌽 Galpón 3 (16 semanas de vida)", min_value=0, max_value=1000, value=None, step=1)
+        cantidades["Galpón 4"] = st.number_input("🚜 Galpón 4 (56 semanas de vida)", min_value=0, max_value=1000, value=None, step=1)
         
     st.markdown("<br>", unsafe_allow_html=True)
     
