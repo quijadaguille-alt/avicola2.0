@@ -161,11 +161,15 @@ def get_supabase_client():
     except Exception as e:
         return None, str(e)
 
-# Control de estado interno de la app
+# Inicializar variables de estado de forma segura
 if "mostrar_error" not in st.session_state:
     st.session_state.mostrar_error = False
-if "sobreescribir_pendiente" not in st.session_state:
-    st.session_state.sobreescribir_pendiente = False
+if "confirmacion_sobreescribir" not in st.session_state:
+    st.session_state.confirmacion_sobreescribir = False
+if "datos_temporales" not in st.session_state:
+    st.session_state.datos_temporales = None
+if "registro_previo" not in st.session_state:
+    st.session_state.registro_previo = None
 
 # Obtener fecha actual en zona horaria de Chile para la verificación
 tz_chile = pytz.timezone('America/Santiago')
@@ -202,20 +206,11 @@ with st.container():
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Intentamos conectar a Supabase para verificar registros previos de hoy
-    supabase_client, error_msg = get_supabase_client()
-    registro_previo = None
+    # 1. BOTÓN PRINCIPAL: GUARDAR REGISTRO
+    # Este botón siempre está visible y activo
+    guardar = st.button("💾 Guardar Registro", use_container_width=True)
     
-    if supabase_client and not error_msg:
-        try:
-            # Consultamos si hoy ya tiene registros
-            response_check = supabase_client.table("registro_bajas").select("fecha, hora").eq("fecha", fecha_hoy).limit(1).execute()
-            if response_check.data:
-                registro_previo = response_check.data[0]
-        except Exception:
-            pass
-
-    # Función que limpia y valida los datos antes de operar
+    # Función que limpia y valida los datos
     def validar_entradas():
         valores_invalidos = False
         campos_vacios = False
@@ -242,63 +237,37 @@ with st.container():
                 
         return campos_vacios, valores_invalidos, payload_data
 
-    # SI YA EXISTE UN REGISTRO DE HOY
-    if registro_previo and not st.session_state.sobreescribir_pendiente:
-        # Formatear la hora bonita
-        hora_cruda = datetime.strptime(registro_previo['hora'], "%H:%M:%S.%f" if "." in registro_previo['hora'] else "%H:%M:%S")
-        hora_formateada = hora_cruda.strftime("%H:%M")
+    # Al presionar el botón de Guardar
+    if guardar:
+        campos_vacios, valores_invalidos, payload_data = validar_entradas()
         
-        # Mapeo de días en español
-        dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-        dia_nombre = dias_semana[datetime.strptime(registro_previo['fecha'], '%Y-%m-%d').weekday()]
-        
-        st.warning(f"⚠️ ¡Atención! Ya se envió un registro hoy **{dia_nombre} {datetime.strptime(registro_previo['fecha'], '%Y-%m-%d').strftime('%d/%m')}** a las **{hora_formateada} hrs**.")
-        st.info("Si continúas, los datos anteriores de hoy serán borrados por completo y se guardarán los nuevos.")
-        
-        # Botón para activar el flujo de sobrescritura
-        st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
-        confirmar_intento = st.button("⚠️ Sí, deseo sobrescribir los datos de hoy", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        if confirmar_intento:
-            campos_vacios, valores_invalidos, payload_data = validar_entradas()
-            if campos_vacios:
-                st.error("⚠️ ¡Atención! Debes llenar los 4 cuadros primero (si no hay bajas en un galpón, escribe '0').")
-            elif valores_invalidos:
-                st.session_state.mostrar_error = True
-            else:
-                st.session_state.sobreescribir_pendiente = True
-                st.rerun()
-
-    else:
-        # Botón de Guardar normal
-        guardar = st.button("💾 Guardar Registro", use_container_width=True)
-        
-        # Si confirmamos la sobrescritura o se presiona guardar normal
-        if guardar or st.session_state.sobreescribir_pendiente:
-            campos_vacios, valores_invalidos, payload_data = validar_entradas()
+        if campos_vacios:
+            st.error("⚠️ ¡Atención! Debes llenar los 4 cuadros (si no hay bajas en un galpón, escribe '0').")
+            st.session_state.confirmacion_sobreescribir = False
+        elif valores_invalidos:
+            st.session_state.mostrar_error = True
+            st.session_state.confirmacion_sobreescribir = False
+        else:
+            st.session_state.mostrar_error = False
             
-            if campos_vacios:
-                st.error("⚠️ ¡Atención! Debes llenar los 4 cuadros (si no hay bajas en un galpón, escribe '0').")
-                st.session_state.sobreescribir_pendiente = False
-            elif valores_invalidos:
-                st.session_state.mostrar_error = True
-                st.session_state.sobreescribir_pendiente = False
-            else:
-                st.session_state.mostrar_error = False
-                
-                if error_msg:
-                    st.error(f"❌ Error de configuración: {error_msg}")
-                elif not supabase_client:
-                    st.error("❌ No se pudo conectar a la base de datos Supabase.")
-                else:
-                    with st.spinner("Procesando datos en el servidor..."):
-                        try:
-                            # 1. Si era una sobrescritura, BORRAMOS primero los registros viejos de hoy
-                            if st.session_state.sobreescribir_pendiente or registro_previo:
-                                supabase_client.table("registro_bajas").delete().eq("fecha", fecha_hoy).execute()
-                            
-                            # 2. Insertamos el nuevo payload
+            # Consultar si ya hay registros de hoy en Supabase antes de guardar
+            supabase_client, error_msg = get_supabase_client()
+            if supabase_client and not error_msg:
+                try:
+                    response_check = supabase_client.table("registro_bajas").select("fecha, hora").eq("fecha", fecha_hoy).limit(1).execute()
+                    
+                    if response_check.data:
+                        # ¡Ya hay registro hoy! Guardamos datos temporalmente en memoria y activamos advertencia
+                        st.session_state.registro_previo = response_check.data[0]
+                        st.session_state.datos_temporales = {
+                            "payload_data": payload_data,
+                            "observacion": observacion
+                        }
+                        st.session_state.confirmacion_sobreescribir = True
+                    else:
+                        # No hay registros hoy: Guardar directamente
+                        st.session_state.confirmacion_sobreescribir = False
+                        with st.spinner("Enviando datos al servidor..."):
                             payload = []
                             for galpon_name, qty in payload_data.items():
                                 numero_galpon = int(galpon_name.replace("Galpón ", ""))
@@ -309,24 +278,76 @@ with st.container():
                                 })
                             
                             supabase_client.table("registro_bajas").insert(payload).execute()
-                            
-                            # Resetear estado de sobrescritura
-                            st.session_state.sobreescribir_pendiente = False
-                            
-                            st.markdown(f"""
+                            st.markdown("""
                                 <div class="success-box">
-                                    🎉 ¡Datos Guardados y Actualizados con Éxito!<br>
-                                    <span style="font-size: 13px; font-weight: normal;">Los registros anteriores de hoy fueron actualizados correctamente en Supabase.</span>
+                                    🎉 ¡Registros Guardados con Éxito!<br>
+                                    <span style="font-size: 13px; font-weight: normal;">Se registraron las bajas de los 4 galpones correctamente en Supabase.</span>
                                 </div>
                             """, unsafe_allow_html=True)
                             st.balloons()
-                            st.rerun()
-                            
-                        except Exception as e:
-                            st.error(f"❌ Error al procesar los datos: {str(e)}")
-                            st.session_state.sobreescribir_pendiente = False
+                except Exception as e:
+                    st.error(f"❌ Error al consultar la base de datos: {str(e)}")
 
-    # Muestra el aviso de error con el botón rojo para corregir el dato
+    # 2. BLOQUE DE ADVERTENCIA DE SOBRESCRITURA (Aparece dinámicamente si ya hay datos hoy)
+    if st.session_state.confirmacion_sobreescribir and st.session_state.registro_previo:
+        registro = st.session_state.registro_previo
+        
+        # Formatear la hora de forma amigable
+        hora_cruda = datetime.strptime(registro['hora'], "%H:%M:%S.%f" if "." in registro['hora'] else "%H:%M:%S")
+        hora_formateada = hora_cruda.strftime("%H:%M")
+        
+        # Mapeo del día en español
+        dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        dia_nombre = dias_semana[datetime.strptime(registro['fecha'], '%Y-%m-%d').weekday()]
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.warning(f"⚠️ ¡Atención! Ya se envió un registro hoy **{dia_nombre} {datetime.strptime(registro['fecha'], '%Y-%m-%d').strftime('%d/%m')}** a las **{hora_formateada} hrs**.")
+        st.info("Si continúas, los datos anteriores de hoy serán borrados por completo de la base de datos y se guardarán los nuevos.")
+        
+        # Botón amarillo para ejecutar la sobrescritura
+        st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
+        ejecutar_sobreescritura = st.button("⚠️ Sí, deseo sobrescribir los datos de hoy", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        if ejecutar_sobreescritura:
+            supabase_client, error_msg = get_supabase_client()
+            temp_data = st.session_state.datos_temporales
+            
+            if supabase_client and temp_data:
+                with st.spinner("Actualizando datos en el servidor..."):
+                    try:
+                        # 1. Borrar registros de hoy
+                        supabase_client.table("registro_bajas").delete().eq("fecha", fecha_hoy).execute()
+                        
+                        # 2. Insertar los nuevos registros
+                        payload = []
+                        for galpon_name, qty in temp_data["payload_data"].items():
+                            numero_galpon = int(galpon_name.replace("Galpón ", ""))
+                            payload.append({
+                                "galpon": numero_galpon,
+                                "cantidad_muertas": qty,
+                                "observacion": temp_data["observacion"].strip() if temp_data["observacion"] else ""
+                            })
+                        
+                        supabase_client.table("registro_bajas").insert(payload).execute()
+                        
+                        # Limpiar variables de estado
+                        st.session_state.confirmacion_sobreescribir = False
+                        st.session_state.datos_temporales = None
+                        st.session_state.registro_previo = None
+                        
+                        st.markdown("""
+                            <div class="success-box">
+                                🎉 ¡Datos Guardados y Actualizados con Éxito!<br>
+                                <span style="font-size: 13px; font-weight: normal;">Los registros anteriores de hoy fueron actualizados correctamente en Supabase.</span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        st.balloons()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error al sobrescribir los datos: {str(e)}")
+
+    # 3. MUESTRA EL AVISO DE ERROR SI SE DETECTAN LETRAS, NEGATIVOS O DECIMALES
     if st.session_state.mostrar_error:
         st.markdown("<br>", unsafe_allow_html=True)
         st.error("⚠️ ¡Valor Incorrecto detectado! Recuerda ingresar únicamente números enteros positivos (sin letras, decimales, comas ni signos negativos).")
