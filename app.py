@@ -156,17 +156,18 @@ with st.container():
     
     st.markdown("### 📋 Cantidad de Bajas por Galpón")
     
-    # Entradas verticales para cada uno de los 4 galpones (0 al infinito positivo)
-    cantidades = {}
+    # Entradas de texto numérico para cada galpón.
+    # Usar st.text_input nos permite controlar con exactitud si el usuario escribe letras o guiones
+    entradas_crudas = {}
     
     col1, col2 = st.columns(2)
     with col1:
-        cantidades["Galpón 1"] = st.number_input("🏠 Galpón 1 (24 semanas de vida)", min_value=0, value=None, step=1)
-        cantidades["Galpón 2"] = st.number_input("🥚 Galpón 2 (42 semanas de vida)", min_value=0, value=None, step=1)
+        entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas de vida)", value="", placeholder="Escribe un número...")
+        entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2 (42 semanas de vida)", value="", placeholder="Escribe un número...")
         
     with col2:
-        cantidades["Galpón 3"] = st.number_input("🌽 Galpón 3 (16 semanas de vida)", min_value=0, value=None, step=1)
-        cantidades["Galpón 4"] = st.number_input("🚜 Galpón 4 (56 semanas de vida)", min_value=0, value=None, step=1)
+        entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3 (16 semanas de vida)", value="", placeholder="Escribe un número...")
+        entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4 (56 semanas de vida)", value="", placeholder="Escribe un número...")
         
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -183,24 +184,39 @@ with st.container():
     guardar = st.button("💾 Guardar Registro", use_container_width=True)
     
     if guardar:
-        # Validar si se ingresaron números decimales de forma manual o valores incorrectos
         valores_invalidos = False
         bajas_activas = {}
         
-        for galpon_name, qty in cantidades.items():
-            if qty is not None:
-                # Si el número es menor a 0, o tiene decimales (no es igual a su parte entera)
-                if qty < 0 or qty != int(qty):
+        for galpon_name, valor_crudo in entradas_crudas.items():
+            valor_limpio = valor_crudo.strip()
+            
+            # Si el usuario dejó el campo vacío, lo ignoramos
+            if not valor_limpio:
+                continue
+                
+            # Validar de forma súper estricta que solo contenga dígitos numéricos (del 0 al 9)
+            # Esto bloquea automáticamente letras, espacios intermedios, puntos, comas y el signo menos (-)
+            if not valor_limpio.isdigit():
+                valores_invalidos = True
+                break
+            
+            try:
+                qty = int(valor_limpio)
+                if qty < 0:
                     valores_invalidos = True
+                    break
                 elif qty > 0:
-                    bajas_activas[galpon_name] = int(qty)
+                    bajas_activas[galpon_name] = qty
+            except ValueError:
+                valores_invalidos = True
+                break
         
         if valores_invalidos:
             st.session_state.mostrar_error = True
         elif not bajas_activas:
             st.error("⚠️ Debes ingresar al menos una baja (cantidad mayor a 0) en algún galpón para poder guardar.")
         else:
-            st.session_state.mostrar_error = False # Limpiar error si todo es correcto
+            st.session_state.mostrar_error = False  # Limpiar error si todo es correcto
             supabase_client, error_msg = get_supabase_client()
             
             if error_msg:
@@ -217,7 +233,7 @@ with st.container():
                             numero_galpon = int(galpon_name.replace("Galpón ", ""))
                             payload.append({
                                 "galpon": numero_galpon,
-                                "cantidad_muertas": int(qty),
+                                "cantidad_muertas": qty,
                                 "observacion": observacion.strip() if observacion else ""
                             })
                         
@@ -239,7 +255,7 @@ with st.container():
     # Muestra el aviso de error con el botón rojo para corregir el dato
     if st.session_state.mostrar_error:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.error("⚠️ ¡Valor Incorrecto detectado! Recuerda ingresar únicamente números enteros positivos (sin decimales ni signos negativos).")
+        st.error("⚠️ ¡Valor Incorrecto detectado! Recuerda ingresar únicamente números enteros positivos (sin letras, decimales, comas ni signos negativos).")
         
         # Botón rojo estilizado usando el contenedor CSS
         st.markdown('<div class="error-button-container">', unsafe_allow_html=True)
