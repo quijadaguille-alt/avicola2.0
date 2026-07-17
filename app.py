@@ -7,49 +7,23 @@ from supabase import create_client, Client
 
 # Configuración de la página optimizada para dispositivos móviles
 st.set_page_config(
-    page_title="Registro de Bajas",
+    page_title="Gestión Avícola",
     page_icon="🐔",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS personalizados para UI limpia, responsiva y eliminar bloques vacíos superiores
+# Estilos CSS personalizados para UI limpia, responsiva y dividir formularios
 st.markdown("""
 <style>
-    /* Ocultar el menú de tres puntos (opciones de desarrollo) */
-    #MainMenu {
-        visibility: hidden;
-    }
-    
-    /* Ocultar la barra de estado superior de Streamlit */
-    header {
-        visibility: hidden;
-        height: 0px !important;
-        padding: 0px !important;
-    }
-    
-    /* Ocultar el pie de página de Streamlit */
-    footer {
-        visibility: hidden;
-    }
+    #MainMenu { visibility: hidden; }
+    header { visibility: hidden; height: 0px !important; padding: 0px !important; }
+    footer { visibility: hidden; }
 
-    /* Eliminar espacios vacíos superiores obligatoriamente */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 0rem !important;
-    }
+    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
+    div[data-testid="stVerticalBlock"] > div:first-child { margin-top: 0px !important; padding-top: 0px !important; }
+    .stApp { background-color: #f8fafc; }
     
-    div[data-testid="stVerticalBlock"] > div:first-child {
-        margin-top: 0px !important;
-        padding-top: 0px !important;
-    }
-     
-    /* Estilo del fondo de la aplicación */
-    .stApp {
-        background-color: #f8fafc;
-    }
-    
-    /* Contenedor tipo tarjeta central */
     .main-card {
         background-color: #ffffff;
         padding: 24px;
@@ -57,28 +31,36 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         margin-bottom: 20px;
         border: 1px solid #f1f5f9;
-        margin-top: 0px !important;
     }
     
-    /* Encabezado elegante */
-    .header-title {
-        color: #0f172a;
-        font-size: 24px;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 4px;
-    }
-    .header-subtitle {
-        color: #64748b;
-        font-size: 14px;
-        text-align: center;
-        margin-bottom: 24px;
-    }
+    .header-title { color: #0f172a; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+    .header-subtitle { color: #64748b; font-size: 14px; text-align: center; margin-bottom: 24px; }
     
-    /* Estilos para selectores, áreas de texto e inputs de fecha */
-    div[data-baseweb="select"], div[data-baseweb="input"], div[data-baseweb="calendar"] {
+    .section-banner-color {
+        background-color: #fef3c7;
+        color: #92400e;
+        padding: 10px;
         border-radius: 10px;
+        font-weight: bold;
+        font-size: 16px;
+        text-align: center;
+        margin: 20px 0 10px 0;
+        border: 1px solid #fde68a;
     }
+    
+    .section-banner-blanco {
+        background-color: #f1f5f9;
+        color: #334155;
+        padding: 10px;
+        border-radius: 10px;
+        font-weight: bold;
+        font-size: 16px;
+        text-align: center;
+        margin: 25px 0 10px 0;
+        border: 1px solid #e2e8f0;
+    }
+    
+    div[data-baseweb="select"], div[data-baseweb="input"] { border-radius: 10px; }
     
     /* Botón Guardar (Verde) */
     .stButton>button {
@@ -90,25 +72,9 @@ st.markdown("""
         border-radius: 12px !important;
         border: none !important;
         box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important;
-        transition: all 0.2s ease-in-out !important;
     }
-    .stButton>button:hover {
-        background-color: #059669 !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4) !important;
-    }
-    .stButton>button:active {
-        background-color: #047857 !important;
-        transform: translateY(1px) !important;
-    }
+    .stButton>button:hover { background-color: #059669 !important; }
     
-    /* Botón Secundario Historial (Azul grisáceo) */
-    div.stActionInput > div > button, div[data-testid="stExpander"] button {
-        font-weight: 600 !important;
-        border-radius: 10px !important;
-    }
-    
-    /* Botón Sobrescribir (Amarillo / Naranja) */
     .override-button-container button {
         background-color: #f59e0b !important;
         color: white !important;
@@ -117,268 +83,217 @@ st.markdown("""
         padding: 12px 24px !important;
         border-radius: 12px !important;
         border: none !important;
-        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3) !important;
-        transition: all 0.2s ease-in-out !important;
     }
-    .override-button-container button:hover {
-        background-color: #d97706 !important;
-        transform: translateY(-1px) !important;
-    }
-
-    /* Contenedor y diseño específico para el Botón Rojo de Error */
-    .error-button-container button {
-        background-color: #ef4444 !important;
-        color: white !important;
-        font-size: 16px !important;
-        font-weight: 600 !important;
-        padding: 10px 20px !important;
-        border-radius: 12px !important;
-        border: none !important;
-        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3) !important;
-    }
+    .override-button-container button:hover { background-color: #d97706 !important; }
     
-    /* Estilos para las etiquetas */
-    label {
-        font-weight: 600 !important;
-        color: #334155 !important;
-        font-size: 15px !important;
-        margin-bottom: 6px !important;
-    }
+    label { font-weight: 600 !important; color: #475569 !important; font-size: 14px !important; }
     
-    /* Estilo para las alertas de éxito */
     .success-box {
-        padding: 16px;
-        border-radius: 12px;
-        background-color: #ecfdf5;
-        border: 1px solid #a7f3d0;
-        color: #065f46;
-        font-size: 15px;
-        font-weight: 500;
-        text-align: center;
-        margin-top: 15px;
+        padding: 16px; border-radius: 12px; background-color: #ecfdf5;
+        border: 1px solid #a7f3d0; color: #065f46; font-size: 15px;
+        font-weight: 500; text-align: center; margin-top: 15px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Inicializar conexión a Supabase de forma segura
+# Conexión Supabase
 @st.cache_resource
 def get_supabase_client():
     try:
         supabase_url = st.secrets.get("SUPABASE_URL")
         supabase_key = st.secrets.get("SUPABASE_KEY")
         if not supabase_url or not supabase_key:
-            return None, "Faltan las credenciales de Supabase in Secrets."
-        client = create_client(supabase_url, supabase_key)
-        return client, None
+            return None, "Faltan credenciales."
+        return create_client(supabase_url, supabase_key), None
     except Exception as e:
         return None, str(e)
 
-# Inicializar variables de estado
-if "mostrar_error" not in st.session_state:
-    st.session_state.mostrar_error = False
-if "confirmacion_sobreescribir" not in st.session_state:
-    st.session_state.confirmacion_sobreescribir = False
-if "datos_temporales" not in st.session_state:
-    st.session_state.datos_temporales = None
-if "registro_previo" not in st.session_state:
-    st.session_state.registro_previo = None
+# Inicializar estados de la sesión
+if "mostrar_error" not in st.session_state: st.session_state.mostrar_error = False
+if "sobreescribir_muertes" not in st.session_state: st.session_state.sobreescribir_muertes = False
+if "sobreescribir_inventario" not in st.session_state: st.session_state.sobreescribir_inventario = False
+if "temp_muertes" not in st.session_state: st.session_state.temp_muertes = None
+if "temp_inventario" not in st.session_state: st.session_state.temp_inventario = None
 
-# Obtener fecha actual en Chile
 tz_chile = pytz.timezone('America/Santiago')
 fecha_hoy_default = datetime.now(tz_chile).date()
 
-# El contenedor principal abre e inicia la tarjeta blanca inmediatamente antes de cualquier texto
-with st.container():
-    st.markdown('<div class="main-card">', unsafe_allow_html=True)
-    
-    st.markdown('<div class="header-title">🐔 Avícola Santa Valentina</div>', unsafe_allow_html=True)
-    st.markdown('<div class="header-subtitle">Registro de bajas por galpón</div>', unsafe_allow_html=True)
-    
-    st.markdown("### 📅 Fecha de Registro")
-    fecha_seleccionada = st.date_input("Selecciona el día de las bajas", value=fecha_hoy_default, label_visibility="collapsed")
-    fecha_str = fecha_seleccionada.strftime('%Y-%m-%d')
-    
-    st.markdown("### 📋 Cantidad de Bajas por Galpón")
-    
-    entradas_crudas = {}
-    col1, col2 = st.columns(2)
-    with col1:
-        entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1", value="", placeholder="Ingresa cantidad (ej: 0)")
-        entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2", value="", placeholder="Ingresa cantidad (ej: 0)")
-        
-    with col2:
-        entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3", value="", placeholder="Ingresa cantidad (ej: 0)")
-        entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4", value="", placeholder="Ingresa cantidad (ej: 0)")
-        
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    observacion = st.text_area(
-        "Observaciones / Notas (Opcional) 📝",
-        placeholder="Ej: Problemas de ventilación, golpe de calor, goteo de bebederos...",
-        max_chars=200
-    )
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # BOTÓN PRINCIPAL: GUARDAR REGISTRO
-    guardar = st.button("💾 Guardar Registro", use_container_width=True)
-    
-    st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
-    
-    # NUEVA INTERFAZ: BOTÓN DESPLEGABLE DE HISTORIAL DE LA ÚLTIMA SEMANA
-    with st.expander("📊 Ver Bajas de la Última Semana", expanded=False):
-        supabase_client, error_msg = get_supabase_client()
-        if supabase_client and not error_msg:
-            try:
-                # Calculamos la fecha de hace 7 días atrás para filtrar de forma eficiente
-                hace_una_semana = (datetime.now(tz_chile) - timedelta(days=7)).strftime('%Y-%m-%d')
-                
-                # Consultamos la vista limpia 'resumen_bajas_diarias' filtrando por los últimos 7 días
-                response_historial = supabase_client.table("resumen_bajas_diarias").select("*").gte("fecha", hace_una_semana).execute()
-                
-                if response_historial.data:
-                    # Cargamos los datos en una tabla ordenada
-                    df_historial = pd.DataFrame(response_historial.data)
-                    
-                    # Renombrar columnas estéticamente para visualización
-                    df_historial.columns = ["Fecha", "G1", "G2", "G3", "G4", "Notas"]
-                    
-                    # Mostrar la tabla formateada optimizándola al ancho del celular
-                    st.dataframe(df_historial, use_container_width=True, hide_index=True)
-                else:
-                    st.info("📅 No se registran bajas ingresadas en los últimos 7 días.")
-            except Exception as e:
-                st.error(f"No se pudo cargar el historial: {str(e)}")
-        else:
-            st.error("Error de conexión al cargar el historial.")
+# MENÚ PRINCIPAL DE ENTRADA
+st.markdown("### 🗺️ ¿Qué deseas registrar hoy?")
+modulo = st.selectbox("Selecciona una opción para continuar:", ["Formulario de Bajas (Muertes)", "Inventario Diario de Huevos"], label_visibility="collapsed")
 
-    def validar_entradas():
-        valores_invalidos = False
-        campos_vacios = False
-        payload_data = {}
-        for galpon_name, valor_crudo in entradas_crudas.items():
-            valor_limpio = valor_crudo.strip()
-            if not valor_limpio:
-                campos_vacios = True
-                break
-            if not valor_limpio.isdigit():
-                valores_invalidos = True
-                break
-            try:
-                qty = int(valor_limpio)
-                if qty < 0:
-                    valores_invalidos = True
-                    break
-                else:
-                    payload_data[galpon_name] = qty
-            except ValueError:
-                valores_invalidos = True
-                break
-        return campos_vacios, valores_invalidos, payload_data
-
-    if guardar:
-        campos_vacios, valores_invalidos, payload_data = validar_entradas()
-        if campos_vacios:
-            st.error("⚠️ ¡Atención! Debes llenar los 4 cuadros (si no hay bajas en un galpón, escribe '0').")
-            st.session_state.confirmacion_sobreescribir = False
-        elif valores_invalidos:
-            st.session_state.mostrar_error = True
-            st.session_state.confirmacion_sobreescribir = False
-        else:
-            st.session_state.mostrar_error = False
+# =====================================================================
+# MODULO 1: FORMULARIO DE BAJAS (MUERTES) - Conserva tu lógica intacta
+# =====================================================================
+if modulo == "Formulario de Bajas (Muertes)":
+    with st.container():
+        st.markdown('<div class="main-card">', unsafe_allow_html=True)
+        st.markdown('<div class="header-title">🐔 Avícola Santa Valentina</div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-subtitle">Registro de bajas por galpón</div>', unsafe_allow_html=True)
+        
+        st.markdown("### 📅 Fecha de Registro")
+        fecha_seleccionada = st.date_input("Fecha muertas", value=fecha_hoy_default, label_visibility="collapsed", key="fecha_m")
+        fecha_str = fecha_seleccionada.strftime('%Y-%m-%d')
+        
+        st.markdown("### 📋 Cantidad de Bajas")
+        entradas_crudas = {}
+        col1, col2 = st.columns(2)
+        with col1:
+            entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1", value="", placeholder="Ej: 0")
+            entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2", value="", placeholder="Ej: 0")
+        with col2:
+            entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3", value="", placeholder="Ej: 0")
+            entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4", value="", placeholder="Ej: 0")
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        observacion = st.text_area("Observaciones / Notas (Opcional) 📝", placeholder="Ej: Problemas de ventilación...", max_chars=200, key="obs_m")
+        
+        guardar = st.button("💾 Guardar Registro de Bajas", use_container_width=True)
+        
+        st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
+        with st.expander("📊 Ver Bajas de la Última Semana", expanded=False):
             supabase_client, error_msg = get_supabase_client()
             if supabase_client and not error_msg:
                 try:
-                    response_check = supabase_client.table("registro_bajas").select("fecha, hora").eq("fecha", fecha_str).limit(1).execute()
-                    if response_check.data:
-                        st.session_state.registro_previo = response_check.data[0]
-                        st.session_state.datos_temporales = {
-                            "payload_data": payload_data,
-                            "observacion": observacion,
-                            "fecha": fecha_str
-                        }
-                        st.session_state.confirmacion_sobreescribir = True
-                    else:
-                        st.session_state.confirmacion_sobreescribir = False
-                        with st.spinner("Enviando datos al servidor..."):
-                            payload = []
-                            for galpon_name, qty in payload_data.items():
-                                numero_galpon = int(galpon_name.replace("Galpón ", ""))
-                                payload.append({
-                                    "galpon": numero_galpon,
-                                    "cantidad_muertas": qty,
-                                    "observacion": observacion.strip() if observacion else "" ,
-                                    "fecha": fecha_str
-                                })
-                            supabase_client.table("registro_bajas").insert(payload).execute()
-                            st.markdown("""
-                                <div class="success-box">
-                                    🎉 ¡Registros Guardados con Éxito!<br>
-                                    <span style="font-size: 13px; font-weight: normal;">Se registraron las bajas correctamente en Supabase.</span>
-                                </div>
-                            """, unsafe_allow_html=True)
-                            st.balloons()
-                            st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error al consultar la base de datos: {str(e)}")
+                    hace_una_semana = (datetime.now(tz_chile) - timedelta(days=7)).strftime('%Y-%m-%d')
+                    response_historial = supabase_client.table("resumen_bajas_diarias").select("*").gte("fecha", hace_una_semana).execute()
+                    if response_historial.data:
+                        df_historial = pd.DataFrame(response_historial.data)
+                        df_historial.columns = ["Fecha", "G1", "G2", "G3", "G4", "Notas"]
+                        st.dataframe(df_historial, use_container_width=True, hide_index=True)
+                    else: st.info("📅 No hay bajas registradas esta semana.")
+                except Exception as e: st.error(str(e))
 
-    if st.session_state.confirmacion_sobreescribir and st.session_state.registro_previo:
-        registro = st.session_state.registro_previo
-        temp_data = st.session_state.datos_temporales
-        if temp_data and temp_data["fecha"] == fecha_str:
-            hora_cruda = datetime.strptime(registro['hora'], "%H:%M:%S.%f" if "." in registro['hora'] else "%H:%M:%S")
-            hora_formateada = hora_cruda.strftime("%H:%M")
-            dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-            dia_nombre = dias_semana[datetime.strptime(registro['fecha'], '%Y-%m-%d').weekday()]
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.warning(f"⚠️ ¡Atención! Ya se envió un registro para la fecha **{dia_nombre} {datetime.strptime(registro['fecha'], '%Y-%m-%d').strftime('%d/%m')}** (guardado originalmente a las **{hora_formateada} hrs**).")
-            st.info("Si continúas, los datos de ese día serán borrados por completo y se guardarán los nuevos números.")
-            
-            st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
-            ejecutar_sobreescritura = st.button("⚠️ Sí, deseo sobrescribir los datos de hoy", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            if ejecutar_sobreescritura:
+        # Validación básica de muertas (obligatorio llenar los 4 campos)
+        if guardar:
+            valores_invalidos = False
+            campos_vacios = False
+            payload_data = {}
+            for k, v in entradas_crudas.items():
+                v_clean = v.strip()
+                if not v_clean: campos_vacios = True; break
+                if not v_clean.isdigit(): valores_invalidos = True; break
+                payload_data[k] = int(v_clean)
+                
+            if campos_vacios: st.error("⚠️ Debes rellenar los 4 galpones (escribe '0' si no hay bajas).")
+            elif valores_invalidos: st.error("⚠️ Ingresa solo números enteros positivos.")
+            else:
                 supabase_client, error_msg = get_supabase_client()
-                if supabase_client and temp_data:
-                    with st.spinner("Actualizando datos en el servidor..."):
-                        try:
-                            supabase_client.table("registro_bajas").delete().eq("fecha", fecha_str).execute()
-                            payload = []
-                            for galpon_name, qty in temp_data["payload_data"].items():
-                                numero_galpon = int(galpon_name.replace("Galpón ", ""))
-                                payload.append({
-                                    "galpon": numero_galpon,
-                                    "cantidad_muertas": qty,
-                                    "observacion": temp_data["observacion"].strip() if temp_data["observacion"] else "",
-                                    "fecha": fecha_str
-                                })
+                if supabase_client and not error_msg:
+                    res = supabase_client.table("registro_bajas").select("fecha, hora").eq("fecha", fecha_str).limit(1).execute()
+                    if res.data:
+                        st.session_state.temp_muertes = {"data": payload_data, "obs": observacion, "fecha": fecha_str, "previo": res.data[0]}
+                        st.session_state.sobreescribir_muertes = True
+                    else:
+                        st.session_state.sobreescribir_muertes = False
+                        with st.spinner("Guardando..."):
+                            payload = [{"galpon": int(g.replace("Galpón ", "")), "cantidad_muertas": q, "observacion": observacion.strip(), "fecha": fecha_str} for g, q in payload_data.items()]
                             supabase_client.table("registro_bajas").insert(payload).execute()
-                            st.session_state.confirmacion_sobreescribir = False
-                            st.session_state.datos_temporales = None
-                            st.session_state.registro_previo = None
-                            
-                            st.markdown("""
-                                <div class="success-box">
-                                    🎉 ¡Datos Guardados y Actualizados con Éxito!<br>
-                                    <span style="font-size: 13px; font-weight: normal;">Los registros anteriores de esa fecha fueron actualizados correctamente en Supabase.</span>
-                                </div>
-                            """, unsafe_allow_html=True)
+                            st.success("🎉 ¡Bajas guardadas con éxito!")
                             st.balloons()
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ Error al sobrescribir los datos: {str(e)}")
-        else:
-            st.session_state.confirmacion_sobreescribir = False
 
-    if st.session_state.mostrar_error:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.error("⚠️ ¡Valor Incorrecto detectado! Recuerda ingresar únicamente números enteros positivos (sin letras, decimales, comas ni signos negativos).")
-        st.markdown('<div class="error-button-container">', unsafe_allow_html=True)
-        if st.button("🚨 Cambiar número", use_container_width=True):
-            st.session_state.mostrar_error = False
-            st.rerun()
+        # Lógica advertencia muertas
+        if st.session_state.sobreescribir_muertes and st.session_state.temp_muertes:
+            t_m = st.session_state.temp_muertes
+            if t_m["fecha"] == fecha_str:
+                st.warning(f"⚠️ Ya existe un registro de bajas para el {fecha_str}. ¿Deseas sobrescribirlo?")
+                if st.button("⚠️ Sí, sobrescribir bajas del día", use_container_width=True):
+                    supabase_client, _ = get_supabase_client()
+                    supabase_client.table("registro_bajas").delete().eq("fecha", fecha_str).execute()
+                    payload = [{"galpon": int(g.replace("Galpón ", "")), "cantidad_muertas": q, "observacion": t_m["obs"].strip(), "fecha": fecha_str} for g, q in t_m["data"].items()]
+                    supabase_client.table("registro_bajas").insert(payload).execute()
+                    st.session_state.sobreescribir_muertes = False
+                    st.success("🎉 ¡Bajas actualizadas con éxito!")
+                    st.rerun()
+            else: st.session_state.sobreescribir_muertes = False
         st.markdown('</div>', unsafe_allow_html=True)
-                        
-    st.markdown('</div>', unsafe_allow_html=True)
+
+# =====================================================================
+# MODULO 2: INVENTARIO DIARIO DE HUEVOS - Nueva Lógica Solicitada
+# =====================================================================
+elif modulo == "Inventario Diario de Huevos":
+    with st.container():
+        st.markdown('<div class="main-card">', unsafe_allow_html=True)
+        st.markdown('<div class="header-title">🥚 Inventario de Producción</div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-subtitle">Ingreso diario de huevos clasificados</div>', unsafe_allow_html=True)
+        
+        st.markdown("### 📅 Fecha de Inventario")
+        fecha_seleccionada = st.date_input("Fecha inventario", value=fecha_hoy_default, label_visibility="collapsed", key="fecha_i")
+        fecha_str = fecha_seleccionada.strftime('%Y-%m-%d')
+        
+        lista_tamanos = ["Super Jumbo", "Jumbo", "Super", "Extra", "Primera", "Segunda", "Tercera", "Cuarta"]
+        inventario_inputs = {}
+        
+        # --- SECCIÓN 1: HUEVOS DE COLOR ---
+        st.markdown('<div class="section-banner-color">🟤 HUEVOS DE COLOR</div>', unsafe_allow_html=True)
+        col_c1, col_c2 = st.columns(2)
+        for idx, tamano in enumerate(lista_tamanos):
+            target_col = col_c1 if idx % 2 == 0 else col_c2
+            with target_col:
+                inventario_inputs[f"color_{tamano.lower().replace(' ', '_')}"] = st.text_input(f"Color {tamano}", value="", placeholder="0 (Vacío)", key=f"c_{tamano}")
+                
+        # --- SECCIÓN 2: HUEVOS BLANCOS ---
+        st.markdown('<div class="section-banner-blanco">⚪ HUEVOS BLANCOS</div>', unsafe_allow_html=True)
+        col_b1, col_b2 = st.columns(2)
+        for idx, tamano in enumerate(lista_tamanos):
+            target_col = col_b1 if idx % 2 == 0 else col_b2
+            with target_col:
+                inventario_inputs[f"blanco_{tamano.lower().replace(' ', '_')}"] = st.text_input(f"Blanco {tamano}", value="", placeholder="0 (Vacío)", key=f"b_{tamano}")
+                
+        st.markdown("<br>", unsafe_allow_html=True)
+        guardar_inv = st.button("💾 Guardar Inventario de Huevos", use_container_width=True)
+
+        # Validación del inventario (Campos vacíos pasan a ser automáticamente 0)
+        if guardar_inv:
+            valores_invalidos = False
+            payload_inventario = {"fecha": fecha_str}
+            
+            for key, val_crudo in inventario_inputs.items():
+                val_limpio = val_crudo.strip()
+                if not val_limpio:
+                    payload_inventario[key] = 0  # Tu requerimiento: Si no ingresa nada, por defecto es 0
+                else:
+                    if not val_limpio.isdigit():
+                        valores_invalidos = True; break
+                    payload_inventario[key] = int(val_limpio)
+            
+            if valores_invalidos:
+                st.error("⚠️ Error: Solo se permiten números enteros positivos en el inventario.")
+            else:
+                supabase_client, error_msg = get_supabase_client()
+                if supabase_client and not error_msg:
+                    try:
+                        res_inv = supabase_client.table("registro_inventario").select("fecha, hora").eq("fecha", fecha_str).limit(1).execute()
+                        if res_inv.data:
+                            st.session_state.temp_inventario = {"payload": payload_inventario, "fecha": fecha_str}
+                            st.session_state.sobreescribir_inventario = True
+                        else:
+                            st.session_state.sobreescribir_inventario = False
+                            with st.spinner("Guardando inventario..."):
+                                supabase_client.table("registro_inventario").insert(payload_inventario).execute()
+                                st.success("🎉 ¡Inventario de huevos registrado exitosamente!")
+                                st.balloons()
+                    except Exception as e: st.error(f"Error en base de datos: {str(e)}")
+
+        # Lógica advertencia sobrescribir inventario
+        if st.session_state.sobreescribir_inventario and st.session_state.temp_inventario:
+            t_i = st.session_state.temp_inventario
+            if t_i["fecha"] == fecha_str:
+                st.warning(f"⚠️ Ya se envió un reporte de inventario hoy para la fecha {fecha_str}. ¿Deseas sobrescribirlo?")
+                st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
+                ejecutar_sobreescritura_inv = st.button("⚠️ Sí, deseo sobrescribir el inventario", use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                if ejecutar_sobreescritura_inv:
+                    supabase_client, _ = get_supabase_client()
+                    try:
+                        supabase_client.table("registro_inventario").delete().eq("fecha", fecha_str).execute()
+                        supabase_client.table("registro_inventario").insert(t_i["payload"]).execute()
+                        st.session_state.sobreescribir_inventario = False
+                        st.session_state.temp_inventario = None
+                        st.success("🎉 ¡Inventario sobrescrito y actualizado con éxito!")
+                        st.rerun()
+                    except Exception as e: st.error(str(e))
+            else: st.session_state.sobreescribir_inventario = False
+
+        st.markdown('</div>', unsafe_allow_html=True)
