@@ -123,7 +123,7 @@ st.markdown("### 🗺️ ¿Qué deseas registrar hoy?")
 modulo = st.selectbox("Selecciona una opción para continuar:", ["Formulario de Bajas (Muertes)", "Inventario Diario de Huevos"], label_visibility="collapsed")
 
 # =====================================================================
-# MODULO 1: FORMULARIO DE BAJAS (MUERTES) - Conserva tu lógica intacta
+# MODULO 1: FORMULARIO DE BAJAS (MUERTES)
 # =====================================================================
 if modulo == "Formulario de Bajas (Muertes)":
     with st.container():
@@ -164,7 +164,6 @@ if modulo == "Formulario de Bajas (Muertes)":
                     else: st.info("📅 No hay bajas registradas esta semana.")
                 except Exception as e: st.error(str(e))
 
-        # Validación básica de muertas (obligatorio llenar los 4 campos)
         if guardar:
             valores_invalidos = False
             campos_vacios = False
@@ -191,8 +190,8 @@ if modulo == "Formulario de Bajas (Muertes)":
                             supabase_client.table("registro_bajas").insert(payload).execute()
                             st.success("🎉 ¡Bajas guardadas con éxito!")
                             st.balloons()
+                            st.rerun()
 
-        # Lógica advertencia muertas
         if st.session_state.sobreescribir_muertes and st.session_state.temp_muertes:
             t_m = st.session_state.temp_muertes
             if t_m["fecha"] == fecha_str:
@@ -209,7 +208,7 @@ if modulo == "Formulario de Bajas (Muertes)":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# MODULO 2: INVENTARIO DIARIO DE HUEVOS - Nueva Lógica Solicitada
+# MODULO 2: INVENTARIO DIARIO DE HUEVOS
 # =====================================================================
 elif modulo == "Inventario Diario de Huevos":
     with st.container():
@@ -243,7 +242,40 @@ elif modulo == "Inventario Diario de Huevos":
         st.markdown("<br>", unsafe_allow_html=True)
         guardar_inv = st.button("💾 Guardar Inventario de Huevos", use_container_width=True)
 
-        # Validación del inventario (Campos vacíos pasan a ser automáticamente 0)
+        st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
+        
+        # INTERFAZ ACTUALIZADA: BOTÓN DESPLEGABLE PARA VER EXCLUSIVAMENTE EL ÚLTIMO INVENTARIO ACTIVO
+        with st.expander("🔍 Ver Inventario Actual (Último Cargado)", expanded=False):
+            supabase_client, error_msg = get_supabase_client()
+            if supabase_client and not error_msg:
+                try:
+                    # Buscamos solo el primer registro (limit 1) ordenado por la fecha más nueva
+                    res_ultimo = supabase_client.table("resumen_inventario_diario").select("*").limit(1).execute()
+                    
+                    if res_ultimo.data:
+                        datos_raw = res_ultimo.data[0]
+                        fecha_registro_inv = datos_raw.pop("fecha") # Sacamos la fecha para procesar solo los huevos
+                        
+                        # Pasamos los datos a un formato vertical (Tipo de Huevo | Cantidad)
+                        df_items = pd.DataFrame(list(datos_raw.items()), columns=["Tipo de Huevo", "Cantidad"])
+                        
+                        # REQUERIMIENTO CLAVE: Filtrar y eliminar todas las filas donde la cantidad sea igual a 0
+                        df_filtrado = df_items[df_items["Cantidad"] > 0]
+                        
+                        if not df_filtrado.empty:
+                            st.markdown(f"**📦 Mostrando Cierre del Día: {fecha_registro_inv}**")
+                            # Mostrar tabla limpia sin ceros
+                            st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+                        else:
+                            st.info(f"📋 El último inventario cargado ({fecha_registro_inv}) se guardó completamente con valores en 0.")
+                    else:
+                        st.info("📭 Aún no se han registrado inventarios en el sistema.")
+                except Exception as e:
+                    st.error(f"No se pudo consultar el inventario: {str(e)}")
+            else:
+                st.error("Error de conexión al servidor.")
+
+        # Validación del inventario
         if guardar_inv:
             valores_invalidos = False
             payload_inventario = {"fecha": fecha_str}
@@ -251,7 +283,7 @@ elif modulo == "Inventario Diario de Huevos":
             for key, val_crudo in inventario_inputs.items():
                 val_limpio = val_crudo.strip()
                 if not val_limpio:
-                    payload_inventario[key] = 0  # Tu requerimiento: Si no ingresa nada, por defecto es 0
+                    payload_inventario[key] = 0
                 else:
                     if not val_limpio.isdigit():
                         valores_invalidos = True; break
@@ -273,6 +305,7 @@ elif modulo == "Inventario Diario de Huevos":
                                 supabase_client.table("registro_inventario").insert(payload_inventario).execute()
                                 st.success("🎉 ¡Inventario de huevos registrado exitosamente!")
                                 st.balloons()
+                                st.rerun()
                     except Exception as e: st.error(f"Error en base de datos: {str(e)}")
 
         # Lógica advertencia sobrescribir inventario
