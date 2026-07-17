@@ -193,12 +193,12 @@ with st.container():
     
     col1, col2 = st.columns(2)
     with col1:
-        entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
-        entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2 (42 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
+        entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1", value="", placeholder="Ingresa cantidad (ej: 0)")
+        entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2", value="", placeholder="Ingresa cantidad (ej: 0)")
         
     with col2:
-        entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3 (16 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
-        entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4 (56 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
+        entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3", value="", placeholder="Ingresa cantidad (ej: 0)")
+        entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4", value="", placeholder="Ingresa cantidad (ej: 0)")
         
     st.markdown("<br>", unsafe_allow_html=True)
     
