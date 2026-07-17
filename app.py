@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS personalizados para UI limpia, responsiva y ocultar herramientas de desarrollo
+# Estilos CSS personalizados para UI limpia, responsiva y eliminar bloques vacíos superiores
 st.markdown("""
 <style>
     /* Ocultar el menú de tres puntos (opciones de desarrollo) */
@@ -23,11 +23,24 @@ st.markdown("""
     /* Ocultar la barra de estado superior de Streamlit */
     header {
         visibility: hidden;
+        height: 0px !important;
+        padding: 0px !important;
     }
     
     /* Ocultar el pie de página de Streamlit */
     footer {
         visibility: hidden;
+    }
+
+    /* Eliminar espacios vacíos superiores obligatoriamente */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+    }
+    
+    div[data-testid="stVerticalBlock"] > div:first-child {
+        margin-top: 0px !important;
+        padding-top: 0px !important;
     }
      
     /* Estilo del fondo de la aplicación */
@@ -43,6 +56,7 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         margin-bottom: 20px;
         border: 1px solid #f1f5f9;
+        margin-top: 0px !important;
     }
     
     /* Encabezado elegante */
@@ -102,7 +116,6 @@ st.markdown("""
     .override-button-container button:hover {
         background-color: #d97706 !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 6px 12px rgba(245, 158, 11, 0.4) !important;
     }
 
     /* Contenedor y diseño específico para el Botón Rojo de Error */
@@ -115,12 +128,6 @@ st.markdown("""
         border-radius: 12px !important;
         border: none !important;
         box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3) !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-    .error-button-container button:hover {
-        background-color: #dc2626 !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4) !important;
     }
     
     /* Estilos para las etiquetas */
@@ -152,16 +159,14 @@ def get_supabase_client():
     try:
         supabase_url = st.secrets.get("SUPABASE_URL")
         supabase_key = st.secrets.get("SUPABASE_KEY")
-        
         if not supabase_url or not supabase_key:
-            return None, "Faltan las credenciales de Supabase en Secrets."
-            
+            return None, "Faltan las credenciales de Supabase in Secrets."
         client = create_client(supabase_url, supabase_key)
         return client, None
     except Exception as e:
         return None, str(e)
 
-# Inicializar variables de estado de forma segura
+# Inicializar variables de estado
 if "mostrar_error" not in st.session_state:
     st.session_state.mostrar_error = False
 if "confirmacion_sobreescribir" not in st.session_state:
@@ -171,27 +176,24 @@ if "datos_temporales" not in st.session_state:
 if "registro_previo" not in st.session_state:
     st.session_state.registro_previo = None
 
-# Obtener fecha actual en zona horaria de Chile por defecto
+# Obtener fecha actual en Chile
 tz_chile = pytz.timezone('America/Santiago')
 fecha_hoy_default = datetime.now(tz_chile).date()
 
-# Renderizado de la UI en la tarjeta principal
+# El contenedor principal abre e inicia la tarjeta blanca inmediatamente antes de cualquier texto
 with st.container():
-    # Abrimos la tarjeta blanca AL PRINCIPIO de todo el contenido visual
     st.markdown('<div class="main-card">', unsafe_allow_html=True)
     
     st.markdown('<div class="header-title">🐔 Avícola Santa Valentina</div>', unsafe_allow_html=True)
     st.markdown('<div class="header-subtitle">Registro rápido de bajas por galpón</div>', unsafe_allow_html=True)
     
     st.markdown("### 📅 Fecha de Registro")
-    # El selector de fecha ahora queda correctamente dentro del recuadro principal
-    fecha_seleccionada = st.date_input("Selecciona el día de las bajas", value=fecha_hoy_default)
+    fecha_seleccionada = st.date_input("Selecciona el día de las bajas", value=fecha_hoy_default, label_visibility="collapsed")
     fecha_str = fecha_seleccionada.strftime('%Y-%m-%d')
     
     st.markdown("### 📋 Cantidad de Bajas por Galpón")
     
     entradas_crudas = {}
-    
     col1, col2 = st.columns(2)
     with col1:
         entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas de vida)", value="", placeholder="Ingresa cantidad (ej: 0)")
@@ -203,7 +205,6 @@ with st.container():
         
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Observaciones opcionales
     observacion = st.text_area(
         "Observaciones / Notas (Opcional) 📝",
         placeholder="Ej: Problemas de ventilación, golpe de calor, goteo de bebederos...",
@@ -212,15 +213,12 @@ with st.container():
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 1. BOTÓN PRINCIPAL: GUARDAR REGISTRO
     guardar = st.button("💾 Guardar Registro", use_container_width=True)
     
-    # Función que limpia y valida los datos
     def validar_entradas():
         valores_invalidos = False
         campos_vacios = False
         payload_data = {}
-        
         for galpon_name, valor_crudo in entradas_crudas.items():
             valor_limpio = valor_crudo.strip()
             if not valor_limpio:
@@ -239,13 +237,10 @@ with st.container():
             except ValueError:
                 valores_invalidos = True
                 break
-                
         return campos_vacios, valores_invalidos, payload_data
 
-    # Al presionar el botón de Guardar
     if guardar:
         campos_vacios, valores_invalidos, payload_data = validar_entradas()
-        
         if campos_vacios:
             st.error("⚠️ ¡Atención! Debes llenar los 4 cuadros (si no hay bajas en un galpón, escribe '0').")
             st.session_state.confirmacion_sobreescribir = False
@@ -254,13 +249,10 @@ with st.container():
             st.session_state.confirmacion_sobreescribir = False
         else:
             st.session_state.mostrar_error = False
-            
-            # Consultar en Supabase si ya hay datos de la fecha seleccionada
             supabase_client, error_msg = get_supabase_client()
             if supabase_client and not error_msg:
                 try:
                     response_check = supabase_client.table("registro_bajas").select("fecha, hora").eq("fecha", fecha_str).limit(1).execute()
-                    
                     if response_check.data:
                         st.session_state.registro_previo = response_check.data[0]
                         st.session_state.datos_temporales = {
@@ -278,10 +270,9 @@ with st.container():
                                 payload.append({
                                     "galpon": numero_galpon,
                                     "cantidad_muertas": qty,
-                                    "observacion": observacion.strip() if observacion else "",
+                                    "observacion": observacion.strip() if observacion else "" ,
                                     "fecha": fecha_str
                                 })
-                            
                             supabase_client.table("registro_bajas").insert(payload).execute()
                             st.markdown("""
                                 <div class="success-box">
@@ -293,15 +284,12 @@ with st.container():
                 except Exception as e:
                     st.error(f"❌ Error al consultar la base de datos: {str(e)}")
 
-    # 2. BLOQUE DE ADVERTENCIA DE SOBRESCRITURA
     if st.session_state.confirmacion_sobreescribir and st.session_state.registro_previo:
         registro = st.session_state.registro_previo
         temp_data = st.session_state.datos_temporales
-        
         if temp_data and temp_data["fecha"] == fecha_str:
             hora_cruda = datetime.strptime(registro['hora'], "%H:%M:%S.%f" if "." in registro['hora'] else "%H:%M:%S")
             hora_formateada = hora_cruda.strftime("%H:%M")
-            
             dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
             dia_nombre = dias_semana[datetime.strptime(registro['fecha'], '%Y-%m-%d').weekday()]
             
@@ -315,12 +303,10 @@ with st.container():
             
             if ejecutar_sobreescritura:
                 supabase_client, error_msg = get_supabase_client()
-                
                 if supabase_client and temp_data:
                     with st.spinner("Actualizando datos en el servidor..."):
                         try:
                             supabase_client.table("registro_bajas").delete().eq("fecha", fecha_str).execute()
-                            
                             payload = []
                             for galpon_name, qty in temp_data["payload_data"].items():
                                 numero_galpon = int(galpon_name.replace("Galpón ", ""))
@@ -330,9 +316,7 @@ with st.container():
                                     "observacion": temp_data["observacion"].strip() if temp_data["observacion"] else "",
                                     "fecha": fecha_str
                                 })
-                            
                             supabase_client.table("registro_bajas").insert(payload).execute()
-                            
                             st.session_state.confirmacion_sobreescribir = False
                             st.session_state.datos_temporales = None
                             st.session_state.registro_previo = None
@@ -350,11 +334,9 @@ with st.container():
         else:
             st.session_state.confirmacion_sobreescribir = False
 
-    # 3. MUESTRA EL AVISO DE ERROR SI SE DETECTAN LETRAS, NEGATIVOS O DECIMALES
     if st.session_state.mostrar_error:
         st.markdown("<br>", unsafe_allow_html=True)
         st.error("⚠️ ¡Valor Incorrecto detectado! Recuerda ingresar únicamente números enteros positivos (sin letras, decimales, comas ni signos negativos).")
-        
         st.markdown('<div class="error-button-container">', unsafe_allow_html=True)
         if st.button("🚨 Cambiar número", use_container_width=True):
             st.session_state.mostrar_error = False
