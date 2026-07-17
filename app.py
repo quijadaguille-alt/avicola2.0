@@ -1,6 +1,7 @@
 import streamlit as st
 import os
-from datetime import datetime, date
+import pandas as pd
+from datetime import datetime, date, timedelta
 import pytz
 from supabase import create_client, Client
 
@@ -99,6 +100,12 @@ st.markdown("""
     .stButton>button:active {
         background-color: #047857 !important;
         transform: translateY(1px) !important;
+    }
+    
+    /* Botón Secundario Historial (Azul grisáceo) */
+    div.stActionInput > div > button, div[data-testid="stExpander"] button {
+        font-weight: 600 !important;
+        border-radius: 10px !important;
     }
     
     /* Botón Sobrescribir (Amarillo / Naranja) */
@@ -213,8 +220,38 @@ with st.container():
     
     st.markdown("<br>", unsafe_allow_html=True)
     
+    # BOTÓN PRINCIPAL: GUARDAR REGISTRO
     guardar = st.button("💾 Guardar Registro", use_container_width=True)
     
+    st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
+    
+    # NUEVA INTERFAZ: BOTÓN DESPLEGABLE DE HISTORIAL DE LA ÚLTIMA SEMANA
+    with st.expander("📊 Ver Bajas de la Última Semana", expanded=False):
+        supabase_client, error_msg = get_supabase_client()
+        if supabase_client and not error_msg:
+            try:
+                # Calculamos la fecha de hace 7 días atrás para filtrar de forma eficiente
+                hace_una_semana = (datetime.now(tz_chile) - timedelta(days=7)).strftime('%Y-%m-%d')
+                
+                # Consultamos la vista limpia 'resumen_bajas_diarias' filtrando por los últimos 7 días
+                response_historial = supabase_client.table("resumen_bajas_diarias").select("*").gte("fecha", hace_una_semana).execute()
+                
+                if response_historial.data:
+                    # Cargamos los datos en una tabla ordenada
+                    df_historial = pd.DataFrame(response_historial.data)
+                    
+                    # Renombrar columnas estéticamente para visualización
+                    df_historial.columns = ["Fecha", "G1", "G2", "G3", "G4", "Notas"]
+                    
+                    # Mostrar la tabla formateada optimizándola al ancho del celular
+                    st.dataframe(df_historial, use_container_width=True, hide_index=True)
+                else:
+                    st.info("📅 No se registran bajas ingresadas en los últimos 7 días.")
+            except Exception as e:
+                st.error(f"No se pudo cargar el historial: {str(e)}")
+        else:
+            st.error("Error de conexión al cargar el historial.")
+
     def validar_entradas():
         valores_invalidos = False
         campos_vacios = False
@@ -281,6 +318,7 @@ with st.container():
                                 </div>
                             """, unsafe_allow_html=True)
                             st.balloons()
+                            st.rerun()
                 except Exception as e:
                     st.error(f"❌ Error al consultar la base de datos: {str(e)}")
 
