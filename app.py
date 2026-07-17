@@ -185,7 +185,7 @@ with st.container():
     st.markdown('<div class="main-card">', unsafe_allow_html=True)
     
     st.markdown('<div class="header-title">🐔 Avícola Santa Valentina</div>', unsafe_allow_html=True)
-    st.markdown('<div class="header-subtitle">Registro rápido de bajas por galpón</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-subtitle">Registro de bajas por galpón</div>', unsafe_allow_html=True)
     
     st.markdown("### 📅 Fecha de Registro")
     fecha_seleccionada = st.date_input("Selecciona el día de las bajas", value=fecha_hoy_default, label_visibility="collapsed")
