@@ -63,6 +63,24 @@ st.markdown("""
         font-weight: bold; font-size: 16px; text-align: center; margin: 25px 0 10px 0; border: 1px solid #e2e8f0;
     }
     
+    /* Tarjetas de Totales de Cajas */
+    .totales-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        margin-top: 10px;
+    }
+    .total-box {
+        flex: 1;
+        padding: 12px 8px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        border: 1px solid #e2e8f0;
+    }
+    .val-box { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    .lbl-box { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+    
     div[data-baseweb="select"], div[data-baseweb="input"] { border-radius: 10px; }
     
     /* Botones nativos estilizados como Tarjetas de Menú */
@@ -181,20 +199,21 @@ if st.session_state.menu_actual == "INICIO":
         st.markdown('<div class="header-title">¿Qué deseas registrar hoy?</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle">Selecciona uno de los módulos de abajo para ingresar el parte diario del campo.</div>', unsafe_allow_html=True)
         
-        if st.button("📝 Registrar Muertes", use_container_width=True, key="btn_bajas"):
+        if st.button("📝 Registrar Bajas (Muertes) ➔", use_container_width=True, key="btn_bajas"):
             st.session_state.menu_actual = "BAJAS"
             st.session_state.mostrar_vista_rapida = False
             st.rerun()
             
-        if st.button("🥚 Registrar Inventario", use_container_width=True, key="btn_inventario"):
+        if st.button("🥚 Inventario de Huevos ➔", use_container_width=True, key="btn_inventario"):
             st.session_state.menu_actual = "INVENTARIO"
             st.session_state.mostrar_vista_rapida = False
             st.rerun()
             
-        if st.button("📦 Ver Inventario", use_container_width=True, key="btn_ver_inv"):
+        if st.button("📦 Ver Inventario General (Rápido) ➔", use_container_width=True, key="btn_ver_inv"):
             st.session_state.mostrar_vista_rapida = not st.session_state.mostrar_vista_rapida
             st.rerun()
             
+        # DESPLEGABLE CON CÁLCULO DE CAJAS (360 HUEVOS POR CAJA)
         if st.session_state.mostrar_vista_rapida:
             st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 2px dashed #cbd5e1;'>", unsafe_allow_html=True)
             supabase_client, error_msg = get_supabase_client()
@@ -205,14 +224,49 @@ if st.session_state.menu_actual == "INICIO":
                         datos_raw = res_ultimo.data[0]
                         fecha_registro_inv = datos_raw.pop("fecha")
                         
+                        # --- CÁLCULO LOGÍSTICO DE CAJAS ---
+                        total_color = 0
+                        total_blanco = 0
+                        
+                        for key, cantidad in datos_raw.items():
+                            if "Color" in key:
+                                total_color += int(cantidad or 0)
+                            elif "Blanco" in key:
+                                total_blanco += int(cantidad or 0)
+                                
+                        # Conversión a cajas (unidades / 360) redondeado a 1 decimal
+                        cajas_color = round(total_color / 360, 1)
+                        cajas_blanco = round(total_blanco / 360, 1)
+                        cajas_total = round((total_color + total_blanco) / 360, 1)
+                        
+                        # --- DISEÑO DE TARJETAS DE RESUMEN DE CAJAS ---
+                        st.markdown(f"**📊 Consolidado de Cajas (Cierre: {fecha_registro_inv})**")
+                        st.markdown(f"""
+                        <div class="totales-container">
+                            <div class="total-box" style="background-color: #fef3c7; border-color: #fde68a;">
+                                <div class="lbl-box" style="color: #92400e;">📦 Cajas Color</div>
+                                <div class="val-box" style="color: #92400e;">{cajas_color}</div>
+                            </div>
+                            <div class="total-box" style="background-color: #f1f5f9; border-color: #e2e8f0;">
+                                <div class="lbl-box" style="color: #334155;">📦 Cajas Blanco</div>
+                                <div class="val-box" style="color: #334155;">{cajas_blanco}</div>
+                            </div>
+                            <div class="total-box" style="background-color: #ecfdf5; border-color: #a7f3d0;">
+                                <div class="lbl-box" style="color: #065f46;">📊 Total General</div>
+                                <div class="val-box" style="color: #065f46;">{cajas_total}</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Mostrar el detalle vertical filtrando los ceros
                         df_items = pd.DataFrame(list(datos_raw.items()), columns=["Tipo de Huevo", "Cantidad"])
                         df_filtrado = df_items[df_items["Cantidad"] > 0]
                         
                         if not df_filtrado.empty:
-                            st.markdown(f"**📊 Stock Actual en Bodega (Cierre: {fecha_registro_inv})**")
+                            st.markdown("<p style='font-size:13px; color:#64748b; font-weight:600; margin-bottom:5px;'>DETALLE DE UNIDADES EN STOCK:</p>", unsafe_allow_html=True)
                             st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
                         else:
-                            st.info(f"📋 El último inventario cargado ({fecha_registro_inv}) está completamente en 0.")
+                            st.info(f"📋 El último inventario cargado no registra unidades individuales mayores a 0.")
                     else: st.info("📭 No se registran datos de inventario.")
                 except Exception as e: st.error(str(e))
             else: st.error("Error de conexión.")
@@ -220,14 +274,13 @@ if st.session_state.menu_actual == "INICIO":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# PANTALLA 2: FORMULARIO DE BAJAS (BOTÓN SUPERIOR CORREGIDO)
+# PANTALLA 2: FORMULARIO DE BAJAS
 # =====================================================================
 elif st.session_state.menu_actual == "BAJAS":
     with st.container():
         st.markdown('<div class="main-card">', unsafe_allow_html=True)
         st.markdown('<div class="menu-header"><div></div><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
         
-        # UBICACIÓN NUEVA: Botón volver arriba
         st.markdown('<div class="back-button">', unsafe_allow_html=True)
         if st.button("⬅ Volver al Menú Principal", key="back_m"):
             st.session_state.menu_actual = "INICIO"
@@ -325,14 +378,13 @@ elif st.session_state.menu_actual == "BAJAS":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# PANTALLA 3: FORMULARIO DE INVENTARIO (BOTÓN SUPERIOR CORREGIDO)
+# PANTALLA 3: FORMULARIO DE INVENTARIO
 # =====================================================================
 elif st.session_state.menu_actual == "INVENTARIO":
     with st.container():
         st.markdown('<div class="main-card">', unsafe_allow_html=True)
         st.markdown('<div class="menu-header"><div></div><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
         
-        # UBICACIÓN NUEVA: Botón volver arriba
         st.markdown('<div class="back-button">', unsafe_allow_html=True)
         if st.button("⬅ Volver al Menú Principal", key="back_i"):
             st.session_state.menu_actual = "INICIO"
@@ -341,7 +393,7 @@ elif st.session_state.menu_actual == "INVENTARIO":
         st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown('<div class="header-title">🥚 Inventario de Producción</div>', unsafe_allow_html=True)
-        st.markdown('<div class="header-subtitle">Ingreso diario de huevos classified</div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-subtitle">Ingreso diario de huevos clasificados</div>', unsafe_allow_html=True)
         
         st.markdown("### 📅 Fecha de Inventario")
         fecha_seleccionada = st.date_input("Fecha inventario", value=fecha_hoy_default, label_visibility="collapsed", key="fecha_i")
