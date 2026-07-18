@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados para la interfaz móvil
+# Estilos CSS avanzados blindados contra el MODO NOCHE / MODO OSCURO
 st.markdown("""
 <style>
     #MainMenu { visibility: hidden; }
@@ -22,15 +22,19 @@ st.markdown("""
 
     .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
     div[data-testid="stVerticalBlock"] > div:first-child { margin-top: 0px !important; padding-top: 0px !important; }
-    .stApp { background-color: #f8fafc; }
     
+    /* Forzar fondo claro general en la app */
+    .stApp { background-color: #f8fafc !important; color: #1e293b !important; }
+    
+    /* Contenedor tipo tarjeta central blindado */
     .main-card {
-        background-color: #ffffff;
+        background-color: #ffffff !important;
         padding: 24px;
         border-radius: 18px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         margin-bottom: 20px;
         border: 1px solid #f1f5f9;
+        color: #1e293b !important;
     }
     
     .menu-header {
@@ -40,29 +44,34 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .badge-op {
-        background-color: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;
+        background-color: #dcfce7 !important; color: #166534 !important; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;
     }
     
-    .header-title { color: #0f172a; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
-    .header-subtitle { color: #64748b; font-size: 14px; text-align: center; margin-bottom: 24px; }
+    /* Forzar colores oscuros en textos de encabezados */
+    .header-title { color: #0f172a !important; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+    .header-subtitle { color: #64748b !important; font-size: 14px; text-align: center; margin-bottom: 24px; }
     
     .section-banner-color {
-        background-color: #fef3c7; color: #92400e; padding: 10px; border-radius: 10px;
+        background-color: #fef3c7 !important; color: #92400e !important; padding: 10px; border-radius: 10px;
         font-weight: bold; font-size: 16px; text-align: center; margin: 20px 0 10px 0; border: 1px solid #fde68a;
     }
     .section-banner-blanco {
-        background-color: #f1f5f9; color: #334155; padding: 10px; border-radius: 10px;
+        background-color: #f1f5f9 !important; color: #334155 !important; padding: 10px; border-radius: 10px;
         font-weight: bold; font-size: 16px; text-align: center; margin: 25px 0 10px 0; border: 1px solid #e2e8f0;
     }
     
     .totales-container { display: flex; gap: 10px; margin-bottom: 15px; margin-top: 10px; }
     .total-box { flex: 1; padding: 12px 8px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; }
     .val-box { font-size: 18px; font-weight: 700; margin-top: 2px; }
-    .lbl-box { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+    .lbl-box { font-size: 11px; font-weight: 600; text-transform: uppercase; }
     
     div[data-baseweb="select"], div[data-baseweb="input"] { border-radius: 10px; }
     
-    /* Botones del menú principal */
+    /* Forzar color de texto negro en etiquetas nativas de Streamlit (Labels) */
+    label, p, span, div { color: #1e293b !important; }
+    .stMarkdown p { color: #1e293b !important; }
+    
+    /* Botones del menú principal blindados */
     div.stButton > button {
         background-color: #ffffff !important; color: #1e293b !important; border: 1px solid #e2e8f0 !important;
         padding: 20px !important; border-radius: 16px !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
@@ -71,23 +80,23 @@ st.markdown("""
     }
     div.stButton > button:hover { border-color: #cbd5e1 !important; background-color: #f8fafc !important; }
     
+    /* Botón Rojo Guinda forzado */
     div.stButton > button[key*="btn_ver_inv"] { background-color: #be123c !important; color: white !important; border: none !important; }
     div.stButton > button[key*="btn_ver_inv"]:hover { background-color: #9f1239 !important; }
+    div.stButton > button[key*="btn_ver_inv"] p, div.stButton > button[key*="btn_ver_inv"] span { color: white !important; }
     
-    /* Estilo botones pequeños de edición inside dataframes o listas */
-    div.stButton > button[key*="edit_"] {
-        padding: 6px 12px !important; font-size: 12px !important; border-radius: 8px !important; margin: 0 !important;
-    }
-
+    /* Botón Guardar Verde forzado */
     .action-button button {
         background-color: #10b981 !important; color: white !important; font-size: 18px !important;
         font-weight: 600 !important; padding: 12px 24px !important; border-radius: 12px !important; border: none !important;
     }
+    .action-button button p, .action-button button span { color: white !important; }
     
     .back-button button {
         background-color: #f1f5f9 !important; color: #475569 !important; padding: 8px 16px !important;
         font-size: 14px !important; border-radius: 10px !important; border: 1px solid #e2e8f0 !important; margin-bottom: 15px !important;
     }
+    .back-button button p, .back-button button span { color: #475569 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -109,7 +118,6 @@ if "temp_muertes" not in st.session_state: st.session_state.temp_muertes = None
 if "temp_inventario" not in st.session_state: st.session_state.temp_inventario = None
 if "mostrar_vista_rapida" not in st.session_state: st.session_state.mostrar_vista_rapida = False
 
-# Valores iniciales para el modo edición
 if "valores_edit_bajas" not in st.session_state: st.session_state.valores_edit_bajas = {"G1": "", "G2": "", "G3": "", "G4": "", "obs": "", "fecha": None}
 if "valores_edit_inv" not in st.session_state: st.session_state.valores_edit_inv = {}
 
@@ -122,18 +130,18 @@ fecha_hoy_default = datetime.now(tz_chile).date()
 if st.session_state.menu_actual == "INICIO":
     with st.container():
         st.markdown('<div class="main-card">', unsafe_allow_html=True)
-        st.markdown('<div class="menu-header"><span style="font-weight:800; font-size:18px; color:#1e293b;">Avícola Santa Valentina</span><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="menu-header"><span style="font-weight:800; font-size:18px; color:#1e293b !important;">Avícola Santa Valentina</span><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
         st.markdown("<div style='text-align:center; font-size:42px; margin-bottom:10px; margin-top:10px;'>🚜</div>", unsafe_allow_html=True)
         st.markdown('<div class="header-title">¿Qué deseas registrar hoy?</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle">Selecciona uno de los módulos de abajo para ingresar el parte diario del campo.</div>', unsafe_allow_html=True)
         
         if st.button("📝 Registrar Bajas (Muertes) ➔", use_container_width=True, key="btn_bajas"):
-            st.session_state.valores_edit_bajas = {"G1": "", "G2": "", "G3": "", "G4": "", "obs": "", "fecha": None} # Limpiar
+            st.session_state.valores_edit_bajas = {"G1": "", "G2": "", "G3": "", "G4": "", "obs": "", "fecha": None}
             st.session_state.menu_actual = "BAJAS"
             st.rerun()
             
         if st.button("🥚 Inventario de Huevos ➔", use_container_width=True, key="btn_inventario"):
-            st.session_state.valores_edit_inv = {} # Limpiar
+            st.session_state.valores_edit_inv = {}
             st.session_state.menu_actual = "INVENTARIO"
             st.rerun()
             
@@ -154,18 +162,16 @@ if st.session_state.menu_actual == "INICIO":
                         total_color = sum(int(v or 0) for k, v in datos_raw.items() if "Color" in k)
                         total_blanco = sum(int(v or 0) for k, v in datos_raw.items() if "Blanco" in k)
                         
-                        st.markdown(f"**📊 Consolidado General (Cierre: {fecha_registro_inv})**")
+                        st.markdown(f"<span style='font-weight:bold;'>📊 Consolidado General (Cierre: {fecha_registro_inv})</span>", unsafe_allow_html=True)
                         st.markdown(f"""
                         <div class="totales-container">
-                            <div class="total-box" style="background-color: #fef3c7; border-color: #fde68a;"><div class="lbl-box">Total Color</div><div class="val-box">{total_color}</div></div>
-                            <div class="total-box" style="background-color: #f1f5f9; border-color: #e2e8f0;"><div class="lbl-box">Total Blanco</div><div class="val-box">{total_blanco}</div></div>
-                            <div class="total-box" style="background-color: #ecfdf5; border-color: #a7f3d0;"><div class="lbl-box">Total General</div><div class="val-box">{total_color + total_blanco}</div></div>
+                            <div class="total-box" style="background-color: #fef3c7 !important; border-color: #fde68a !important;"><div class="lbl-box" style="color: #92400e !important;">Total Color</div><div class="val-box" style="color: #92400e !important;">{total_color}</div></div>
+                            <div class="total-box" style="background-color: #f1f5f9 !important; border-color: #e2e8f0 !important;"><div class="lbl-box" style="color: #334155 !important;">Total Blanco</div><div class="val-box" style="color: #334155 !important;">{total_blanco}</div></div>
+                            <div class="total-box" style="background-color: #ecfdf5 !important; border-color: #a7f3d0 !important;"><div class="lbl-box" style="color: #065f46 !important;">Total General</div><div class="val-box" style="color: #065f46 !important;">{total_color + total_blanco}</div></div>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # BOTÓN DE EDICIÓN RÁPIDA PARA EL INVENTARIO DE HOY
                         if st.button("✏️ Corregir / Editar Inventario de Hoy", use_container_width=True, key="edit_inv_hoy"):
-                            # Mapeamos los nombres de la vista a las llaves técnicas de la tabla para cargarlos en el formulario
                             mapeo_llaves = {
                                 "Color S. Jumbo": "color_super_jumbo", "Color Jumbo": "color_jumbo", "Color Super": "color_super", "Color Extra": "color_extra",
                                 "Color 1ra": "color_primera", "Color 2da": "color_segunda", "Color 3ra": "color_tercera", "Color 4ta": "color_cuarta",
@@ -189,7 +195,7 @@ if st.session_state.menu_actual == "INICIO":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# PANTALLA 2: FORMULARIO DE BAJAS (CON MEMORIA DE EDICIÓN)
+# PANTALLA 2: FORMULARIO DE BAJAS
 # =====================================================================
 elif st.session_state.menu_actual == "BAJAS":
     with st.container():
@@ -202,7 +208,6 @@ elif st.session_state.menu_actual == "BAJAS":
         
         st.markdown('<div class="header-title">🐔 Registro de Bajas</div>', unsafe_allow_html=True)
         
-        # Si venimos de presionar "Editar", se bloquea la fecha original de ese registro
         v_bajas = st.session_state.valores_edit_bajas
         if v_bajas["fecha"]:
             st.info(f"✏️ Modo Edición: Modificando registro del {v_bajas['fecha']}")
@@ -214,11 +219,11 @@ elif st.session_state.menu_actual == "BAJAS":
         entradas_crudas = {}
         col1, col2 = st.columns(2)
         with col1:
-            entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1", value=v_bajas["G1"], placeholder="Ej: 0", key="g1_input")
-            entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2", value=v_bajas["G2"], placeholder="Ej: 0", key="g2_input")
+            entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas)", value=v_bajas["G1"], placeholder="Ej: 0", key="g1_input")
+            entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2 (42 semanas)", value=v_bajas["G2"], placeholder="Ej: 0", key="g2_input")
         with col2:
-            entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3", value=v_bajas["G3"], placeholder="Ej: 0", key="g3_input")
-            entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4", value=v_bajas["G4"], placeholder="Ej: 0", key="g4_input")
+            entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3 (16 semanas)", value=v_bajas["G3"], placeholder="Ej: 0", key="g3_input")
+            entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4 (56 semanas)", value=v_bajas["G4"], placeholder="Ej: 0", key="g4_input")
             
         observacion = st.text_area("Observaciones (Opcional) 📝", value=v_bajas["obs"], placeholder="Ej: Ventilador malo...", max_chars=200, key="obs_m")
         
@@ -228,7 +233,6 @@ elif st.session_state.menu_actual == "BAJAS":
         
         st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
         
-        # HISTORIAL DE LA SEMANA CON BOTÓN INDEPENDIENTE DE EDICIÓN POR FILA
         with st.expander("📊 Historial Semanal / Botones de Edición", expanded=False):
             supabase_client, error_msg = get_supabase_client()
             if supabase_client and not error_msg:
@@ -264,7 +268,6 @@ elif st.session_state.menu_actual == "BAJAS":
             elif valores_invalidos: st.error("⚠️ Solo números enteros.")
             else:
                 supabase_client, _ = get_supabase_client()
-                # Si estamos editando un registro explícito, borramos el previo directo sin lanzar alertas
                 if v_bajas["fecha"]:
                     supabase_client.table("registro_bajas").delete().eq("fecha", fecha_str).execute()
                     payload = [{"galpon": int(g.replace("Galpón ", "")), "cantidad_muertas": q, "observacion": observacion.strip(), "fecha": fecha_str} for g, q in payload_data.items()]
@@ -299,7 +302,7 @@ elif st.session_state.menu_actual == "BAJAS":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# PANTALLA 3: FORMULARIO DE INVENTARIO (CON MEMORIA DE EDICIÓN)
+# PANTALLA 3: FORMULARIO DE INVENTARIO
 # =====================================================================
 elif st.session_state.menu_actual == "INVENTARIO":
     with st.container():
@@ -324,7 +327,7 @@ elif st.session_state.menu_actual == "INVENTARIO":
         for idx, tamano in enumerate(lista_tamanos):
             target_col = col_c1 if idx % 2 == 0 else col_c2
             key_name = f"color_{tamano.lower().replace(' ', '_')}"
-            val_defecto = v_inv.get(key_name, "") # Carga el valor previo si estamos editando
+            val_defecto = v_inv.get(key_name, "")
             with target_col:
                 inventario_inputs[key_name] = st.text_input(f"Color {tamano}", value=val_defecto, placeholder="0 (Vacío)", key=f"c_{tamano}")
                 
@@ -333,7 +336,7 @@ elif st.session_state.menu_actual == "INVENTARIO":
         for idx, tamano in enumerate(lista_tamanos):
             target_col = col_b1 if idx % 2 == 0 else col_b2
             key_name = f"blanco_{tamano.lower().replace(' ', '_')}"
-            val_defecto = v_inv.get(key_name, "") # Carga el valor previo si estamos editando
+            val_defecto = v_inv.get(key_name, "")
             with target_col:
                 inventario_inputs[key_name] = st.text_input(f"Blanco {tamano}", value=val_defecto, placeholder="0 (Vacío)", key=f"b_{tamano}")
                 
@@ -363,7 +366,7 @@ elif st.session_state.menu_actual == "INVENTARIO":
                         st.rerun()
                     else:
                         supabase_client.table("registro_inventario").insert(payload_inventario).execute()
-                        st.session_state.valores_edit_inv = {} # Limpiar
+                        st.session_state.valores_edit_inv = {}
                         st.success("🎉 ¡Inventario registrado exitosamente!")
                         st.balloons()
                 except Exception as e: st.error(str(e))
@@ -374,10 +377,12 @@ elif st.session_state.menu_actual == "INVENTARIO":
                 st.warning(f"⚠️ Ya se envió un reporte de inventario para el {fecha_str}. ¿Deseas sobrescribirlo?")
                 if st.button("⚠️ Sí, deseo sobrescribir el inventario", use_container_width=True):
                     supabase_client, _ = get_supabase_client()
-                    supabase_client.table("registro_inventario").delete().eq("fecha", fecha_str).execute()
-                    supabase_client.table("registro_inventario").insert(t_i["payload"]).execute()
-                    st.session_state.sobreescribir_inventario = False
-                    st.session_state.valores_edit_inv = {}
-                    st.success("🎉 ¡Inventario corregido con éxito!")
-                    st.rerun()
+                    try:
+                        supabase_client.table("registro_inventario").delete().eq("fecha", fecha_str).execute()
+                        supabase_client.table("registro_inventario").insert(t_i["payload"]).execute()
+                        st.session_state.sobreescribir_inventario = False
+                        st.session_state.valores_edit_inv = {}
+                        st.success("🎉 ¡Inventario corregido con éxito!")
+                        st.rerun()
+                    except Exception as e: st.error(str(e))
         st.markdown('</div>', unsafe_allow_html=True)
