@@ -199,17 +199,17 @@ if st.session_state.menu_actual == "INICIO":
         st.markdown('<div class="header-title">¿Qué deseas registrar hoy?</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle">Selecciona uno de los módulos de abajo para ingresar el parte diario del campo.</div>', unsafe_allow_html=True)
         
-        if st.button("📝 Registrar Bajas (Muertes) ➔", use_container_width=True, key="btn_bajas"):
+        if st.button("📝 Registrar Muertes", use_container_width=True, key="btn_bajas"):
             st.session_state.menu_actual = "BAJAS"
             st.session_state.mostrar_vista_rapida = False
             st.rerun()
             
-        if st.button("🥚 Inventario de Huevos ➔", use_container_width=True, key="btn_inventario"):
+        if st.button("🥚 Registrar Huevos", use_container_width=True, key="btn_inventario"):
             st.session_state.menu_actual = "INVENTARIO"
             st.session_state.mostrar_vista_rapida = False
             st.rerun()
             
-        if st.button("📦 Ver Inventario General (Rápido) ➔", use_container_width=True, key="btn_ver_inv"):
+        if st.button("📦 Ver Inventario", use_container_width=True, key="btn_ver_inv"):
             st.session_state.mostrar_vista_rapida = not st.session_state.mostrar_vista_rapida
             st.rerun()
             
