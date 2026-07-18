@@ -88,6 +88,16 @@ st.markdown("""
         transform: translateY(-2px) !important;
     }
     
+    /* Estilo exclusivo para el botón de Ver Inventario Rápido (Rojo/Guinda de tu foto) */
+    div.stButton > button[key*="btn_ver_inv"] {
+        background-color: #be123c !important;
+        color: white !important;
+        border: none !important;
+    }
+    div.stButton > button[key*="btn_ver_inv"]:hover {
+        background-color: #9f1239 !important;
+    }
+    
     /* Botones de Acción (Guardar, Volver, Sobrescribir) */
     .action-button button {
         background-color: #10b981 !important;
@@ -145,19 +155,20 @@ def get_supabase_client():
     except Exception as e:
         return None, str(e)
 
-# Inicializar estados de la sesión para navegación y control de datos
+# Inicializar estados de la sesión
 if "menu_actual" not in st.session_state: st.session_state.menu_actual = "INICIO"
 if "mostrar_error" not in st.session_state: st.session_state.mostrar_error = False
 if "sobreescribir_muertes" not in st.session_state: st.session_state.sobreescribir_muertes = False
 if "sobreescribir_inventario" not in st.session_state: st.session_state.sobreescribir_inventario = False
 if "temp_muertes" not in st.session_state: st.session_state.temp_muertes = None
 if "temp_inventario" not in st.session_state: st.session_state.temp_inventario = None
+if "mostrar_vista_rapida" not in st.session_state: st.session_state.mostrar_vista_rapida = False
 
 tz_chile = pytz.timezone('America/Santiago')
 fecha_hoy_default = datetime.now(tz_chile).date()
 
 # =====================================================================
-# PANTALLA 1: MENÚ PRINCIPAL INTERACTIVO (Igual a tus imágenes)
+# PANTALLA 1: MENÚ PRINCIPAL INTERACTIVO (Con las 3 Tarjetas)
 # =====================================================================
 if st.session_state.menu_actual == "INICIO":
     with st.container():
@@ -167,14 +178,49 @@ if st.session_state.menu_actual == "INICIO":
         st.markdown('<div class="header-title">¿Qué deseas registrar hoy?</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle">Selecciona uno de los módulos de abajo para ingresar el parte diario del campo.</div>', unsafe_allow_html=True)
         
-        # Botones diseñados como tarjetas ejecutivas
-        if st.button("📝 Registrar Bajas (Muertes)                                             ➔", use_container_width=True):
+        # Tarjeta 1: Bajas
+        if st.button("📝 Registrar Bajas (Muertes) ➔", use_container_width=True, key="btn_bajas"):
             st.session_state.menu_actual = "BAJAS"
+            st.session_state.mostrar_vista_rapida = False
             st.rerun()
             
-        if st.button("🥚 Inventario de Huevos                                                   ➔", use_container_width=True):
+        # Tarjeta 2: Agregar Producción
+        if st.button("🥚 Inventario de Huevos ➔", use_container_width=True, key="btn_inventario"):
             st.session_state.menu_actual = "INVENTARIO"
+            st.session_state.mostrar_vista_rapida = False
             st.rerun()
+            
+        # Tarjeta 3: NUEVO BOTÓN DIRECTO (Color Guinda/Rojo idéntico a tu mockup)
+        if st.button("📦 Ver Inventario General (Rápido) ➔", use_container_width=True, key="btn_ver_inv"):
+            # Cambia el estado para abrir o cerrar la tabla en la misma pantalla
+            st.session_state.mostrar_vista_rapida = not st.session_state.mostrar_vista_rapida
+            st.rerun()
+            
+        # DESPLEGABLE DIRECTO EN LA PANTALLA PRINCIPAL
+        if st.session_state.mostrar_vista_rapida:
+            st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 2px dashed #cbd5e1;'>", unsafe_allow_html=True)
+            supabase_client, error_msg = get_supabase_client()
+            if supabase_client and not error_msg:
+                try:
+                    res_ultimo = supabase_client.table("resumen_inventario_diario").select("*").limit(1).execute()
+                    if res_ultimo.data:
+                        datos_raw = res_ultimo.data[0]
+                        fecha_registro_inv = datos_raw.pop("fecha")
+                        
+                        df_items = pd.DataFrame(list(datos_raw.items()), columns=["Tipo de Huevo", "Cantidad"])
+                        df_filtrado = df_items[df_items["Cantidad"] > 0]
+                        
+                        if not df_filtrado.empty:
+                            st.markdown(f"**📊 Stock Actual en Bodega (Cierre: {fecha_registro_inv})**")
+                            st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+                        else:
+                            st.info(f"📋 El último inventario cargado ({fecha_registro_inv}) está completamente en 0.")
+                    else:
+                        st.info("📭 No se registran datos de inventario en Supabase.")
+                except Exception as e:
+                    st.error(f"Error al leer base de datos: {str(e)}")
+            else:
+                st.error("Error de conexión con Supabase.")
             
         st.markdown('</div>', unsafe_allow_html=True)
 
