@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados blindados contra el MODO NOCHE y colores unificados
+# Estilos CSS avanzados forzados mediante contenedores externos
 st.markdown("""
 <style>
     #MainMenu { visibility: hidden; }
@@ -47,7 +47,6 @@ st.markdown("""
         background-color: #dcfce7 !important; color: #166534 !important; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;
     }
     
-    /* Forzar colores oscuros en textos de encabezados */
     .header-title { color: #0f172a !important; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
     .header-subtitle { color: #64748b !important; font-size: 14px; text-align: center; margin-bottom: 24px; }
     
@@ -67,11 +66,10 @@ st.markdown("""
     
     div[data-baseweb="select"], div[data-baseweb="input"] { border-radius: 10px; }
     
-    /* Forzar color de texto negro en etiquetas nativas de Streamlit */
     label, p, span, div { color: #1e293b !important; }
     .stMarkdown p { color: #1e293b !important; }
     
-    /* Botones estándar del menú principal (Blancos con texto oscuro) */
+    /* Botones estándar de las tarjetas de menú (Blancos con texto oscuro) */
     div.stButton > button {
         background-color: #ffffff !important; color: #1e293b !important; border: 1px solid #e2e8f0 !important;
         padding: 20px !important; border-radius: 16px !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
@@ -80,26 +78,26 @@ st.markdown("""
     }
     div.stButton > button:hover { border-color: #cbd5e1 !important; background-color: #f8fafc !important; }
     
-    /* 🔴 BOTÓN DE VER INVENTARIO: Rojo Guinda forzado */
-    div.stButton > button[key*="btn_ver_inv"] { background-color: #be123c !important; color: white !important; border: none !important; }
-    div.stButton > button[key*="btn_ver_inv"]:hover { background-color: #9f1239 !important; }
-    div.stButton > button[key*="btn_ver_inv"] p, div.stButton > button[key*="btn_ver_inv"] span { color: white !important; }
+    /* 🔴 FUERZA EL COLOR ROJO EN EL BOTÓN DENTRO DE ESTE CONTENEDOR */
+    .contenedor-rojo div.stButton > button {
+        background-color: #be123c !important; color: white !important; border: none !important;
+    }
+    .contenedor-rojo div.stButton > button:hover { background-color: #9f1239 !important; }
+    .contenedor-rojo div.stButton > button p, .contenedor-rojo div.stButton > button span { color: white !important; }
     
-    /* 🟢 BOTONES DE GUARDAR: Verde Avícola forzado para todas las interfaces */
-    div.stButton > button[key*="btn_guardar_"] {
+    /* 🟢 FUERZA EL COLOR VERDE EN EL BOTÓN DENTRO DE ESTE CONTENEDOR */
+    .contenedor-verde div.stButton > button {
         background-color: #10b981 !important; color: white !important; font-size: 18px !important;
         font-weight: 600 !important; padding: 12px 24px !important; border-radius: 12px !important; border: none !important;
         box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important; text-align: center !important; display: block !important; width: 100% !important;
     }
-    div.stButton > button[key*="btn_guardar_"]:hover { background-color: #059669 !important; color: white !important; }
-    div.stButton > button[key*="btn_guardar_"] p, div.stButton > button[key*="btn_guardar_"] span { color: white !important; }
+    .contenedor-verde div.stButton > button:hover { background-color: #059669 !important; color: white !important; }
+    .contenedor-verde div.stButton > button p, .contenedor-verde div.stButton > button span { color: white !important; }
     
-    /* Botón de edición pequeño */
     div.stButton > button[key*="edit_baja_"] {
         padding: 6px 12px !important; font-size: 12px !important; border-radius: 8px !important; margin: 0 !important;
     }
     
-    /* Botón Volver superior */
     .back-button button {
         background-color: #f1f5f9 !important; color: #475569 !important; padding: 8px 16px !important;
         font-size: 14px !important; border-radius: 10px !important; border: 1px solid #e2e8f0 !important; margin-bottom: 15px !important;
@@ -153,9 +151,12 @@ if st.session_state.menu_actual == "INICIO":
             st.session_state.menu_actual = "INVENTARIO"
             st.rerun()
             
+        # ENVOLTURA EN CONTENEDOR ROJO
+        st.markdown('<div class="contenedor-rojo">', unsafe_allow_html=True)
         if st.button("📦 Ver Inventario General (Rápido) ➔", use_container_width=True, key="btn_ver_inv"):
             st.session_state.mostrar_vista_rapida = not st.session_state.mostrar_vista_rapida
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
             
         if st.session_state.mostrar_vista_rapida:
             st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 2px dashed #cbd5e1;'>", unsafe_allow_html=True)
@@ -235,8 +236,10 @@ elif st.session_state.menu_actual == "BAJAS":
             
         observacion = st.text_area("Observaciones (Opcional) 📝", value=v_bajas["obs"], placeholder="Ej: Ventilador malo...", max_chars=200, key="obs_m")
         
-        # Guardar Bajas (Verde Forzado mediante Key)
-        guardar = st.button("💾 Guardar Registro de Bajas", use_container_width=True, key="btn_guardar_bajas")
+        # ENVOLTURA EN CONTENEDOR VERDE
+        st.markdown('<div class="contenedor-verde">', unsafe_allow_html=True)
+        guardar = st.button("💾 Guardar Registro de Bajas", use_container_width=True, key="btn_save_bajas")
+        st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
         
@@ -349,8 +352,10 @@ elif st.session_state.menu_actual == "INVENTARIO":
                 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Guardar Inventario (Verde Forzado mediante Key)
-        guardar_inv = st.button("💾 Guardar Inventario de Huevos", use_container_width=True, key="btn_guardar_inventario")
+        # ENVOLTURA EN CONTENEDOR VERDE
+        st.markdown('<div class="contenedor-verde">', unsafe_allow_html=True)
+        guardar_inv = st.button("💾 Guardar Inventario de Huevos", use_container_width=True, key="btn_save_inventario")
+        st.markdown('</div>', unsafe_allow_html=True)
 
         if guardar_inv:
             valores_invalidos = False
