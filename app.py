@@ -183,7 +183,6 @@ if modulo == "Formulario de Bajas (Muertes)":
                     if res.data:
                         st.session_state.temp_muertes = {"data": payload_data, "obs": observacion, "fecha": fecha_str}
                         st.session_state.sobreescribir_muertes = True
-                        st.rerun()
                     else:
                         st.session_state.sobreescribir_muertes = False
                         with st.spinner("Guardando..."):
@@ -191,28 +190,21 @@ if modulo == "Formulario de Bajas (Muertes)":
                             supabase_client.table("registro_bajas").insert(payload).execute()
                             st.success("🎉 ¡Bajas guardadas con éxito!")
                             st.balloons()
+                            st.rerun()
 
-        # Alerta de sobrescritura corregida para persistir correctamente en Streamlit
         if st.session_state.sobreescribir_muertes and st.session_state.temp_muertes:
             t_m = st.session_state.temp_muertes
             if t_m["fecha"] == fecha_str:
                 st.warning(f"⚠️ Ya existe un registro de bajas para el {fecha_str}. ¿Deseas sobrescribirlo?")
-                st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
-                confirmar_sobreescritura_m = st.button("⚠️ Sí, sobrescribir bajas del día", use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                if confirmar_sobreescritura_m:
+                if st.button("⚠️ Sí, sobrescribir bajas del día", use_container_width=True):
                     supabase_client, _ = get_supabase_client()
                     supabase_client.table("registro_bajas").delete().eq("fecha", fecha_str).execute()
                     payload = [{"galpon": int(g.replace("Galpón ", "")), "cantidad_muertas": q, "observacion": t_m["obs"].strip(), "fecha": fecha_str} for g, q in t_m["data"].items()]
                     supabase_client.table("registro_bajas").insert(payload).execute()
                     st.session_state.sobreescribir_muertes = False
-                    st.session_state.temp_muertes = None
                     st.success("🎉 ¡Bajas actualizadas con éxito!")
                     st.rerun()
-            else: 
-                st.session_state.sobreescribir_muertes = False
-                st.session_state.temp_muertes = None
+            else: st.session_state.sobreescribir_muertes = False
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
@@ -257,17 +249,22 @@ elif modulo == "Inventario Diario de Huevos":
             supabase_client, error_msg = get_supabase_client()
             if supabase_client and not error_msg:
                 try:
+                    # Buscamos solo el primer registro (limit 1) ordenado por la fecha más nueva
                     res_ultimo = supabase_client.table("resumen_inventario_diario").select("*").limit(1).execute()
                     
                     if res_ultimo.data:
                         datos_raw = res_ultimo.data[0]
-                        fecha_registro_inv = datos_raw.pop("fecha")
+                        fecha_registro_inv = datos_raw.pop("fecha") # Sacamos la fecha para procesar solo los huevos
                         
+                        # Pasamos los datos a un formato vertical (Tipo de Huevo | Cantidad)
                         df_items = pd.DataFrame(list(datos_raw.items()), columns=["Tipo de Huevo", "Cantidad"])
+                        
+                        # REQUERIMIENTO CLAVE: Filtrar y eliminar todas las filas donde la cantidad sea igual a 0
                         df_filtrado = df_items[df_items["Cantidad"] > 0]
                         
                         if not df_filtrado.empty:
                             st.markdown(f"**📦 Mostrando Cierre del Día: {fecha_registro_inv}**")
+                            # Mostrar tabla limpia sin ceros
                             st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
                         else:
                             st.info(f"📋 El último inventario cargado ({fecha_registro_inv}) se guardó completamente con valores en 0.")
@@ -302,16 +299,16 @@ elif modulo == "Inventario Diario de Huevos":
                         if res_inv.data:
                             st.session_state.temp_inventario = {"payload": payload_inventario, "fecha": fecha_str}
                             st.session_state.sobreescribir_inventario = True
-                            st.rerun()
                         else:
                             st.session_state.sobreescribir_inventario = False
                             with st.spinner("Guardando inventario..."):
                                 supabase_client.table("registro_inventario").insert(payload_inventario).execute()
                                 st.success("🎉 ¡Inventario de huevos registrado exitosamente!")
                                 st.balloons()
+                                st.rerun()
                     except Exception as e: st.error(f"Error en base de datos: {str(e)}")
 
-        # Lógica advertencia sobrescribir inventario corregida
+        # Lógica advertencia sobrescribir inventario
         if st.session_state.sobreescribir_inventario and st.session_state.temp_inventario:
             t_i = st.session_state.temp_inventario
             if t_i["fecha"] == fecha_str:
@@ -330,8 +327,6 @@ elif modulo == "Inventario Diario de Huevos":
                         st.success("🎉 ¡Inventario sobrescrito y actualizado con éxito!")
                         st.rerun()
                     except Exception as e: st.error(str(e))
-            else: 
-                st.session_state.sobreescribir_inventario = False
-                st.session_state.temp_inventario = None
+            else: st.session_state.sobreescribir_inventario = False
 
         st.markdown('</div>', unsafe_allow_html=True)
