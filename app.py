@@ -213,7 +213,7 @@ if st.session_state.menu_actual == "INICIO":
             st.session_state.mostrar_vista_rapida = not st.session_state.mostrar_vista_rapida
             st.rerun()
             
-        # DESPLEGABLE CON CÁLCULO DE CAJAS (360 HUEVOS POR CAJA)
+        # DESPLEGABLE CORREGIDO: SUMA DIRECTA SIN DIVISIONES SINO VALORES REALES
         if st.session_state.mostrar_vista_rapida:
             st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 2px dashed #cbd5e1;'>", unsafe_allow_html=True)
             supabase_client, error_msg = get_supabase_client()
@@ -224,7 +224,7 @@ if st.session_state.menu_actual == "INICIO":
                         datos_raw = res_ultimo.data[0]
                         fecha_registro_inv = datos_raw.pop("fecha")
                         
-                        # --- CÁLCULO LOGÍSTICO DE CAJAS ---
+                        # --- CÁLCULO DE SUMA DIRECTA ---
                         total_color = 0
                         total_blanco = 0
                         
@@ -234,26 +234,23 @@ if st.session_state.menu_actual == "INICIO":
                             elif "Blanco" in key:
                                 total_blanco += int(cantidad or 0)
                                 
-                        # Conversión a cajas (unidades / 360) redondeado a 1 decimal
-                        cajas_color = round(total_color / 360, 1)
-                        cajas_blanco = round(total_blanco / 360, 1)
-                        cajas_total = round((total_color + total_blanco) / 360, 1)
+                        total_general = total_color + total_blanco
                         
-                        # --- DISEÑO DE TARJETAS DE RESUMEN DE CAJAS ---
-                        st.markdown(f"**📊 Consolidado de Cajas (Cierre: {fecha_registro_inv})**")
+                        # --- DISEÑO DE TARJETAS DE RESUMEN CORREGIDO ---
+                        st.markdown(f"**📊 Consolidado General (Cierre: {fecha_registro_inv})**")
                         st.markdown(f"""
                         <div class="totales-container">
                             <div class="total-box" style="background-color: #fef3c7; border-color: #fde68a;">
-                                <div class="lbl-box" style="color: #92400e;">📦 Cajas Color</div>
-                                <div class="val-box" style="color: #92400e;">{cajas_color}</div>
+                                <div class="lbl-box" style="color: #92400e;">📦 Total Color</div>
+                                <div class="val-box" style="color: #92400e;">{total_color}</div>
                             </div>
                             <div class="total-box" style="background-color: #f1f5f9; border-color: #e2e8f0;">
-                                <div class="lbl-box" style="color: #334155;">📦 Cajas Blanco</div>
-                                <div class="val-box" style="color: #334155;">{cajas_blanco}</div>
+                                <div class="lbl-box" style="color: #334155;">📦 Total Blanco</div>
+                                <div class="val-box" style="color: #334155;">{total_blanco}</div>
                             </div>
                             <div class="total-box" style="background-color: #ecfdf5; border-color: #a7f3d0;">
                                 <div class="lbl-box" style="color: #065f46;">📊 Total General</div>
-                                <div class="val-box" style="color: #065f46;">{cajas_total}</div>
+                                <div class="val-box" style="color: #065f46;">{total_general}</div>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
@@ -263,10 +260,10 @@ if st.session_state.menu_actual == "INICIO":
                         df_filtrado = df_items[df_items["Cantidad"] > 0]
                         
                         if not df_filtrado.empty:
-                            st.markdown("<p style='font-size:13px; color:#64748b; font-weight:600; margin-bottom:5px;'>DETALLE DE UNIDADES EN STOCK:</p>", unsafe_allow_html=True)
+                            st.markdown("<p style='font-size:13px; color:#64748b; font-weight:600; margin-bottom:5px;'>DETALLE EN STOCK:</p>", unsafe_allow_html=True)
                             st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
                         else:
-                            st.info(f"📋 El último inventario cargado no registra unidades individuales mayores a 0.")
+                            st.info(f"📋 El último inventario cargado no registra unidades mayores a 0.")
                     else: st.info("📭 No se registran datos de inventario.")
                 except Exception as e: st.error(str(e))
             else: st.error("Error de conexión.")
