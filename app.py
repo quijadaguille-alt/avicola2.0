@@ -88,7 +88,7 @@ st.markdown("""
         transform: translateY(-2px) !important;
     }
     
-    /* Estilo exclusivo para el botón de Ver Inventario Rápido (Rojo/Guinda de tu foto) */
+    /* Estilo exclusivo para el botón de Ver Inventario Rápido */
     div.stButton > button[key*="btn_ver_inv"] {
         background-color: #be123c !important;
         color: white !important;
@@ -112,6 +112,7 @@ st.markdown("""
     }
     .action-button button:hover { background-color: #059669 !important; color: white !important; }
     
+    /* Estilo para botón volver superior */
     .back-button button {
         background-color: #f1f5f9 !important;
         color: #475569 !important;
@@ -119,6 +120,8 @@ st.markdown("""
         font-size: 14px !important;
         border-radius: 10px !important;
         border: 1px solid #e2e8f0 !important;
+        text-align: center !important;
+        margin-bottom: 15px !important;
     }
     
     .override-button-container button {
@@ -168,7 +171,7 @@ tz_chile = pytz.timezone('America/Santiago')
 fecha_hoy_default = datetime.now(tz_chile).date()
 
 # =====================================================================
-# PANTALLA 1: MENÚ PRINCIPAL INTERACTIVO (Con las 3 Tarjetas)
+# PANTALLA 1: MENÚ PRINCIPAL INTERACTIVO
 # =====================================================================
 if st.session_state.menu_actual == "INICIO":
     with st.container():
@@ -178,25 +181,20 @@ if st.session_state.menu_actual == "INICIO":
         st.markdown('<div class="header-title">¿Qué deseas registrar hoy?</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle">Selecciona uno de los módulos de abajo para ingresar el parte diario del campo.</div>', unsafe_allow_html=True)
         
-        # Tarjeta 1: Bajas
         if st.button("📝 Registrar Bajas (Muertes) ➔", use_container_width=True, key="btn_bajas"):
             st.session_state.menu_actual = "BAJAS"
             st.session_state.mostrar_vista_rapida = False
             st.rerun()
             
-        # Tarjeta 2: Agregar Producción
         if st.button("🥚 Inventario de Huevos ➔", use_container_width=True, key="btn_inventario"):
             st.session_state.menu_actual = "INVENTARIO"
             st.session_state.mostrar_vista_rapida = False
             st.rerun()
             
-        # Tarjeta 3: NUEVO BOTÓN DIRECTO (Color Guinda/Rojo idéntico a tu mockup)
         if st.button("📦 Ver Inventario General (Rápido) ➔", use_container_width=True, key="btn_ver_inv"):
-            # Cambia el estado para abrir o cerrar la tabla en la misma pantalla
             st.session_state.mostrar_vista_rapida = not st.session_state.mostrar_vista_rapida
             st.rerun()
             
-        # DESPLEGABLE DIRECTO EN LA PANTALLA PRINCIPAL
         if st.session_state.mostrar_vista_rapida:
             st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 2px dashed #cbd5e1;'>", unsafe_allow_html=True)
             supabase_client, error_msg = get_supabase_client()
@@ -215,22 +213,27 @@ if st.session_state.menu_actual == "INICIO":
                             st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
                         else:
                             st.info(f"📋 El último inventario cargado ({fecha_registro_inv}) está completamente en 0.")
-                    else:
-                        st.info("📭 No se registran datos de inventario en Supabase.")
-                except Exception as e:
-                    st.error(f"Error al leer base de datos: {str(e)}")
-            else:
-                st.error("Error de conexión con Supabase.")
+                    else: st.info("📭 No se registran datos de inventario.")
+                except Exception as e: st.error(str(e))
+            else: st.error("Error de conexión.")
             
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# PANTALLA 2: FORMULARIO DE BAJAS (MUERTES)
+# PANTALLA 2: FORMULARIO DE BAJAS (BOTÓN SUPERIOR CORREGIDO)
 # =====================================================================
 elif st.session_state.menu_actual == "BAJAS":
     with st.container():
         st.markdown('<div class="main-card">', unsafe_allow_html=True)
         st.markdown('<div class="menu-header"><div></div><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
+        
+        # UBICACIÓN NUEVA: Botón volver arriba
+        st.markdown('<div class="back-button">', unsafe_allow_html=True)
+        if st.button("⬅ Volver al Menú Principal", key="back_m"):
+            st.session_state.menu_actual = "INICIO"
+            st.session_state.sobreescribir_muertes = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown('<div class="header-title">🐔 Registro de Bajas</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle">MÓDULO MORTALIDAD</div>', unsafe_allow_html=True)
@@ -319,25 +322,26 @@ elif st.session_state.menu_actual == "BAJAS":
                 st.session_state.sobreescribir_muertes = False
                 st.session_state.temp_muertes = None
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="back-button">', unsafe_allow_html=True)
-        if st.button("⬅ Volver al Menú Principal", key="back_m"):
-            st.session_state.menu_actual = "INICIO"
-            st.session_state.sobreescribir_muertes = False
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# PANTALLA 3: FORMULARIO DE INVENTARIO DIARIO DE HUEVOS
+# PANTALLA 3: FORMULARIO DE INVENTARIO (BOTÓN SUPERIOR CORREGIDO)
 # =====================================================================
 elif st.session_state.menu_actual == "INVENTARIO":
     with st.container():
         st.markdown('<div class="main-card">', unsafe_allow_html=True)
         st.markdown('<div class="menu-header"><div></div><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
         
+        # UBICACIÓN NUEVA: Botón volver arriba
+        st.markdown('<div class="back-button">', unsafe_allow_html=True)
+        if st.button("⬅ Volver al Menú Principal", key="back_i"):
+            st.session_state.menu_actual = "INICIO"
+            st.session_state.sobreescribir_inventario = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
         st.markdown('<div class="header-title">🥚 Inventario de Producción</div>', unsafe_allow_html=True)
-        st.markdown('<div class="header-subtitle">Ingreso diario de huevos clasificados</div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-subtitle">Ingreso diario de huevos classified</div>', unsafe_allow_html=True)
         
         st.markdown("### 📅 Fecha de Inventario")
         fecha_seleccionada = st.date_input("Fecha inventario", value=fecha_hoy_default, label_visibility="collapsed", key="fecha_i")
@@ -443,11 +447,4 @@ elif st.session_state.menu_actual == "INVENTARIO":
                 st.session_state.sobreescribir_inventario = False
                 st.session_state.temp_inventario = None
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="back-button">', unsafe_allow_html=True)
-        if st.button("⬅ Volver al Menú Principal", key="back_i"):
-            st.session_state.menu_actual = "INICIO"
-            st.session_state.sobreescribir_inventario = False
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
