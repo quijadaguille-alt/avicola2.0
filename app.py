@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS personalizados para UI limpia, responsiva y dividir formularios
+# Estilos CSS avanzados para replicar EXACTAMENTE la interfaz de tus imágenes
 st.markdown("""
 <style>
     #MainMenu { visibility: hidden; }
@@ -24,6 +24,7 @@ st.markdown("""
     div[data-testid="stVerticalBlock"] > div:first-child { margin-top: 0px !important; padding-top: 0px !important; }
     .stApp { background-color: #f8fafc; }
     
+    /* Contenedor tipo tarjeta central */
     .main-card {
         background-color: #ffffff;
         padding: 24px;
@@ -33,37 +34,62 @@ st.markdown("""
         border: 1px solid #f1f5f9;
     }
     
+    /* Encabezado e identificador OP-1 */
+    .menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .badge-op {
+        background-color: #dcfce7;
+        color: #166534;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
     .header-title { color: #0f172a; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
     .header-subtitle { color: #64748b; font-size: 14px; text-align: center; margin-bottom: 24px; }
     
+    /* Banners estéticos de inventario */
     .section-banner-color {
-        background-color: #fef3c7;
-        color: #92400e;
-        padding: 10px;
-        border-radius: 10px;
-        font-weight: bold;
-        font-size: 16px;
-        text-align: center;
-        margin: 20px 0 10px 0;
-        border: 1px solid #fde68a;
+        background-color: #fef3c7; color: #92400e; padding: 10px; border-radius: 10px;
+        font-weight: bold; font-size: 16px; text-align: center; margin: 20px 0 10px 0; border: 1px solid #fde68a;
     }
-    
     .section-banner-blanco {
-        background-color: #f1f5f9;
-        color: #334155;
-        padding: 10px;
-        border-radius: 10px;
-        font-weight: bold;
-        font-size: 16px;
-        text-align: center;
-        margin: 25px 0 10px 0;
-        border: 1px solid #e2e8f0;
+        background-color: #f1f5f9; color: #334155; padding: 10px; border-radius: 10px;
+        font-weight: bold; font-size: 16px; text-align: center; margin: 25px 0 10px 0; border: 1px solid #e2e8f0;
     }
     
     div[data-baseweb="select"], div[data-baseweb="input"] { border-radius: 10px; }
     
-    /* Botón Guardar (Verde) */
-    .stButton>button {
+    /* Botones nativos estilizados como Tarjetas de Menú */
+    div.stButton > button {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #e2e8f0 !important;
+        padding: 20px !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        transition: all 0.2s ease-in-out !important;
+        margin-bottom: 12px !important;
+    }
+    div.stButton > button:hover {
+        border-color: #cbd5e1 !important;
+        background-color: #f8fafc !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* Botones de Acción (Guardar, Volver, Sobrescribir) */
+    .action-button button {
         background-color: #10b981 !important;
         color: white !important;
         font-size: 18px !important;
@@ -72,8 +98,18 @@ st.markdown("""
         border-radius: 12px !important;
         border: none !important;
         box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important;
+        text-align: center !important;
     }
-    .stButton>button:hover { background-color: #059669 !important; }
+    .action-button button:hover { background-color: #059669 !important; color: white !important; }
+    
+    .back-button button {
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        padding: 8px 16px !important;
+        font-size: 14px !important;
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+    }
     
     .override-button-container button {
         background-color: #f59e0b !important;
@@ -83,8 +119,9 @@ st.markdown("""
         padding: 12px 24px !important;
         border-radius: 12px !important;
         border: none !important;
+        text-align: center !important;
     }
-    .override-button-container button:hover { background-color: #d97706 !important; }
+    .override-button-container button:hover { background-color: #d97706 !important; color: white !important; }
     
     label { font-weight: 600 !important; color: #475569 !important; font-size: 14px !important; }
     
@@ -108,7 +145,8 @@ def get_supabase_client():
     except Exception as e:
         return None, str(e)
 
-# Inicializar estados de la sesión
+# Inicializar estados de la sesión para navegación y control de datos
+if "menu_actual" not in st.session_state: st.session_state.menu_actual = "INICIO"
 if "mostrar_error" not in st.session_state: st.session_state.mostrar_error = False
 if "sobreescribir_muertes" not in st.session_state: st.session_state.sobreescribir_muertes = False
 if "sobreescribir_inventario" not in st.session_state: st.session_state.sobreescribir_inventario = False
@@ -118,18 +156,38 @@ if "temp_inventario" not in st.session_state: st.session_state.temp_inventario =
 tz_chile = pytz.timezone('America/Santiago')
 fecha_hoy_default = datetime.now(tz_chile).date()
 
-# MENÚ PRINCIPAL DE ENTRADA
-st.markdown("### 🗺️ ¿Qué deseas registrar hoy?")
-modulo = st.selectbox("Selecciona una opción para continuar:", ["Formulario de Bajas (Muertes)", "Inventario Diario de Huevos"], label_visibility="collapsed")
-
 # =====================================================================
-# MODULO 1: FORMULARIO DE BAJAS (MUERTES)
+# PANTALLA 1: MENÚ PRINCIPAL INTERACTIVO (Igual a tus imágenes)
 # =====================================================================
-if modulo == "Formulario de Bajas (Muertes)":
+if st.session_state.menu_actual == "INICIO":
     with st.container():
         st.markdown('<div class="main-card">', unsafe_allow_html=True)
-        st.markdown('<div class="header-title">🐔 Avícola Santa Valentina</div>', unsafe_allow_html=True)
-        st.markdown('<div class="header-subtitle">Registro de bajas por galpón</div>', unsafe_allow_html=True)
+        st.markdown('<div class="menu-header"><span style="font-weight:800; font-size:18px; color:#1e293b;">Avícola Santa Valentina</span><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center; font-size:42px; margin-bottom:10px; margin-top:10px;'>🚜</div>", unsafe_allow_html=True)
+        st.markdown('<div class="header-title">¿Qué deseas registrar hoy?</div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-subtitle">Selecciona uno de los módulos de abajo para ingresar el parte diario del campo.</div>', unsafe_allow_html=True)
+        
+        # Botones diseñados como tarjetas ejecutivas
+        if st.button("📝 Registrar Bajas (Muertes)                                             ➔", use_container_width=True):
+            st.session_state.menu_actual = "BAJAS"
+            st.rerun()
+            
+        if st.button("🥚 Inventario de Huevos                                                   ➔", use_container_width=True):
+            st.session_state.menu_actual = "INVENTARIO"
+            st.rerun()
+            
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# =====================================================================
+# PANTALLA 2: FORMULARIO DE BAJAS (MUERTES)
+# =====================================================================
+elif st.session_state.menu_actual == "BAJAS":
+    with st.container():
+        st.markdown('<div class="main-card">', unsafe_allow_html=True)
+        st.markdown('<div class="menu-header"><div></div><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="header-title">🐔 Registro de Bajas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="header-subtitle">MÓDULO MORTALIDAD</div>', unsafe_allow_html=True)
         
         st.markdown("### 📅 Fecha de Registro")
         fecha_seleccionada = st.date_input("Fecha muertas", value=fecha_hoy_default, label_visibility="collapsed", key="fecha_m")
@@ -139,16 +197,18 @@ if modulo == "Formulario de Bajas (Muertes)":
         entradas_crudas = {}
         col1, col2 = st.columns(2)
         with col1:
-            entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas de vida)", value="", placeholder="Ej: 0")
-            entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2 (42 semanas de vida)", value="", placeholder="Ej: 0")
+            entradas_crudas["Galpón 1"] = st.text_input("🏠 Galpón 1 (24 semanas)", value="", placeholder="Ej: 0")
+            entradas_crudas["Galpón 2"] = st.text_input("🥚 Galpón 2 (42 semanas)", value="", placeholder="Ej: 0")
         with col2:
-            entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3 (16 semanas de vida)", value="", placeholder="Ej: 0")
-            entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4 (56 semanas de vida)", value="", placeholder="Ej: 0")
+            entradas_crudas["Galpón 3"] = st.text_input("🌽 Galpón 3 (16 semanas)", value="", placeholder="Ej: 0")
+            entradas_crudas["Galpón 4"] = st.text_input("🚜 Galpón 4 (56 semanas)", value="", placeholder="Ej: 0")
             
         st.markdown("<br>", unsafe_allow_html=True)
         observacion = st.text_area("Observaciones / Notas (Opcional) 📝", placeholder="Ej: Problemas de ventilación...", max_chars=200, key="obs_m")
         
+        st.markdown('<div class="action-button">', unsafe_allow_html=True)
         guardar = st.button("💾 Guardar Registro de Bajas", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
         with st.expander("📊 Ver Bajas de la Última Semana", expanded=False):
@@ -183,6 +243,7 @@ if modulo == "Formulario de Bajas (Muertes)":
                     if res.data:
                         st.session_state.temp_muertes = {"data": payload_data, "obs": observacion, "fecha": fecha_str}
                         st.session_state.sobreescribir_muertes = True
+                        st.rerun()
                     else:
                         st.session_state.sobreescribir_muertes = False
                         with st.spinner("Guardando..."):
@@ -190,29 +251,45 @@ if modulo == "Formulario de Bajas (Muertes)":
                             supabase_client.table("registro_bajas").insert(payload).execute()
                             st.success("🎉 ¡Bajas guardadas con éxito!")
                             st.balloons()
-                            st.rerun()
 
         if st.session_state.sobreescribir_muertes and st.session_state.temp_muertes:
             t_m = st.session_state.temp_muertes
             if t_m["fecha"] == fecha_str:
                 st.warning(f"⚠️ Ya existe un registro de bajas para el {fecha_str}. ¿Deseas sobrescribirlo?")
-                if st.button("⚠️ Sí, sobrescribir bajas del día", use_container_width=True):
+                st.markdown('<div class="override-button-container">', unsafe_allow_html=True)
+                confirmar_sobreescritura_m = st.button("⚠️ Sí, sobrescribir bajas del día", use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                if confirmar_sobreescritura_m:
                     supabase_client, _ = get_supabase_client()
                     supabase_client.table("registro_bajas").delete().eq("fecha", fecha_str).execute()
                     payload = [{"galpon": int(g.replace("Galpón ", "")), "cantidad_muertas": q, "observacion": t_m["obs"].strip(), "fecha": fecha_str} for g, q in t_m["data"].items()]
                     supabase_client.table("registro_bajas").insert(payload).execute()
                     st.session_state.sobreescribir_muertes = False
+                    st.session_state.temp_muertes = None
                     st.success("🎉 ¡Bajas actualizadas con éxito!")
                     st.rerun()
-            else: st.session_state.sobreescribir_muertes = False
+            else: 
+                st.session_state.sobreescribir_muertes = False
+                st.session_state.temp_muertes = None
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="back-button">', unsafe_allow_html=True)
+        if st.button("⬅ Volver al Menú Principal", key="back_m"):
+            st.session_state.menu_actual = "INICIO"
+            st.session_state.sobreescribir_muertes = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# MODULO 2: INVENTARIO DIARIO DE HUEVOS
+# PANTALLA 3: FORMULARIO DE INVENTARIO DIARIO DE HUEVOS
 # =====================================================================
-elif modulo == "Inventario Diario de Huevos":
+elif st.session_state.menu_actual == "INVENTARIO":
     with st.container():
         st.markdown('<div class="main-card">', unsafe_allow_html=True)
+        st.markdown('<div class="menu-header"><div></div><span class="badge-op">OP-1</span></div>', unsafe_allow_html=True)
+        
         st.markdown('<div class="header-title">🥚 Inventario de Producción</div>', unsafe_allow_html=True)
         st.markdown('<div class="header-subtitle">Ingreso diario de huevos clasificados</div>', unsafe_allow_html=True)
         
@@ -240,40 +317,32 @@ elif modulo == "Inventario Diario de Huevos":
                 inventario_inputs[f"blanco_{tamano.lower().replace(' ', '_')}"] = st.text_input(f"Blanco {tamano}", value="", placeholder="0 (Vacío)", key=f"b_{tamano}")
                 
         st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="action-button">', unsafe_allow_html=True)
         guardar_inv = st.button("💾 Guardar Inventario de Huevos", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<hr style='margin: 15px 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
         
-        # INTERFAZ ACTUALIZADA: BOTÓN DESPLEGABLE PARA VER EXCLUSIVAMENTE EL ÚLTIMO INVENTARIO ACTIVO
         with st.expander("🔍 Ver Inventario Actual (Último Cargado)", expanded=False):
             supabase_client, error_msg = get_supabase_client()
             if supabase_client and not error_msg:
                 try:
-                    # Buscamos solo el primer registro (limit 1) ordenado por la fecha más nueva
                     res_ultimo = supabase_client.table("resumen_inventario_diario").select("*").limit(1).execute()
-                    
                     if res_ultimo.data:
                         datos_raw = res_ultimo.data[0]
-                        fecha_registro_inv = datos_raw.pop("fecha") # Sacamos la fecha para procesar solo los huevos
+                        fecha_registro_inv = datos_raw.pop("fecha")
                         
-                        # Pasamos los datos a un formato vertical (Tipo de Huevo | Cantidad)
                         df_items = pd.DataFrame(list(datos_raw.items()), columns=["Tipo de Huevo", "Cantidad"])
-                        
-                        # REQUERIMIENTO CLAVE: Filtrar y eliminar todas las filas donde la cantidad sea igual a 0
                         df_filtrado = df_items[df_items["Cantidad"] > 0]
                         
                         if not df_filtrado.empty:
                             st.markdown(f"**📦 Mostrando Cierre del Día: {fecha_registro_inv}**")
-                            # Mostrar tabla limpia sin ceros
                             st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
                         else:
                             st.info(f"📋 El último inventario cargado ({fecha_registro_inv}) se guardó completamente con valores en 0.")
-                    else:
-                        st.info("📭 Aún no se han registrado inventarios en el sistema.")
-                except Exception as e:
-                    st.error(f"No se pudo consultar el inventario: {str(e)}")
-            else:
-                st.error("Error de conexión al servidor.")
+                    else: st.info("📭 Aún no se han registrado inventarios.")
+                except Exception as e: st.error(str(e))
+            else: st.error("Error de conexión al servidor.")
 
         # Validación del inventario
         if guardar_inv:
@@ -285,12 +354,10 @@ elif modulo == "Inventario Diario de Huevos":
                 if not val_limpio:
                     payload_inventario[key] = 0
                 else:
-                    if not val_limpio.isdigit():
-                        valores_invalidos = True; break
+                    if not val_limpio.isdigit(): valores_invalidos = True; break
                     payload_inventario[key] = int(val_limpio)
             
-            if valores_invalidos:
-                st.error("⚠️ Error: Solo se permiten números enteros positivos en el inventario.")
+            if valores_invalidos: st.error("⚠️ Solo se permiten números enteros positivos.")
             else:
                 supabase_client, error_msg = get_supabase_client()
                 if supabase_client and not error_msg:
@@ -299,16 +366,15 @@ elif modulo == "Inventario Diario de Huevos":
                         if res_inv.data:
                             st.session_state.temp_inventario = {"payload": payload_inventario, "fecha": fecha_str}
                             st.session_state.sobreescribir_inventario = True
+                            st.rerun()
                         else:
                             st.session_state.sobreescribir_inventario = False
                             with st.spinner("Guardando inventario..."):
                                 supabase_client.table("registro_inventario").insert(payload_inventario).execute()
                                 st.success("🎉 ¡Inventario de huevos registrado exitosamente!")
                                 st.balloons()
-                                st.rerun()
-                    except Exception as e: st.error(f"Error en base de datos: {str(e)}")
+                    except Exception as e: st.error(str(e))
 
-        # Lógica advertencia sobrescribir inventario
         if st.session_state.sobreescribir_inventario and st.session_state.temp_inventario:
             t_i = st.session_state.temp_inventario
             if t_i["fecha"] == fecha_str:
@@ -324,9 +390,18 @@ elif modulo == "Inventario Diario de Huevos":
                         supabase_client.table("registro_inventario").insert(t_i["payload"]).execute()
                         st.session_state.sobreescribir_inventario = False
                         st.session_state.temp_inventario = None
-                        st.success("🎉 ¡Inventario sobrescrito y actualizado con éxito!")
+                        st.success("🎉 ¡Inventario sobrescrito con éxito!")
                         st.rerun()
                     except Exception as e: st.error(str(e))
-            else: st.session_state.sobreescribir_inventario = False
+            else: 
+                st.session_state.sobreescribir_inventario = False
+                st.session_state.temp_inventario = None
 
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="back-button">', unsafe_allow_html=True)
+        if st.button("⬅ Volver al Menú Principal", key="back_i"):
+            st.session_state.menu_actual = "INICIO"
+            st.session_state.sobreescribir_inventario = False
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
