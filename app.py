@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados forzados mediante contenedores externos
+# Estilos CSS avanzados blindados contra el Modo Noche y forzados por ID exacto de Streamlit
 st.markdown("""
 <style>
     #MainMenu { visibility: hidden; }
@@ -26,12 +26,12 @@ st.markdown("""
     /* Forzar fondo claro general en la app */
     .stApp { background-color: #f8fafc !important; color: #1e293b !important; }
     
-    /* Contenedor tipo tarjeta central blindado */
+    /* Contenedor tipo tarjeta central */
     .main-card {
         background-color: #ffffff !important;
         padding: 24px;
         border-radius: 18px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         margin-bottom: 20px;
         border: 1px solid #f1f5f9;
         color: #1e293b !important;
@@ -50,12 +50,13 @@ st.markdown("""
     .header-title { color: #0f172a !important; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
     .header-subtitle { color: #64748b !important; font-size: 14px; text-align: center; margin-bottom: 24px; }
     
+    /* Estilo de los Banners de tu foto */
     .section-banner-color {
-        background-color: #fef3c7 !important; color: #92400e !important; padding: 10px; border-radius: 10px;
+        background-color: #fef3c7 !important; color: #92400e !important; padding: 12px; border-radius: 14px;
         font-weight: bold; font-size: 16px; text-align: center; margin: 20px 0 10px 0; border: 1px solid #fde68a;
     }
     .section-banner-blanco {
-        background-color: #f1f5f9 !important; color: #334155 !important; padding: 10px; border-radius: 10px;
+        background-color: #f1f5f9 !important; color: #334155 !important; padding: 12px; border-radius: 14px;
         font-weight: bold; font-size: 16px; text-align: center; margin: 25px 0 10px 0; border: 1px solid #e2e8f0;
     }
     
@@ -69,40 +70,45 @@ st.markdown("""
     label, p, span, div { color: #1e293b !important; }
     .stMarkdown p { color: #1e293b !important; }
     
-    /* Botones estándar de las tarjetas de menú (Blancos con texto oscuro) */
-    div.stButton > button {
+    /* ➔ ESTILO DE BOTONES BASE (Estilo tarjetas del menú principal) */
+    div[data-testid="stButton"] > button {
         background-color: #ffffff !important; color: #1e293b !important; border: 1px solid #e2e8f0 !important;
-        padding: 20px !important; border-radius: 16px !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+        padding: 18px 20px !important; border-radius: 14px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
         font-size: 16px !important; font-weight: 600 !important; text-align: left !important;
         display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 12px !important;
+        width: 100% !important;
     }
-    div.stButton > button:hover { border-color: #cbd5e1 !important; background-color: #f8fafc !important; }
+    div[data-testid="stButton"] > button:hover { border-color: #cbd5e1 !important; background-color: #f8fafc !important; }
     
-    /* 🔴 FUERZA EL COLOR ROJO EN EL BOTÓN DENTRO DE ESTE CONTENEDOR */
-    .contenedor-rojo div.stButton > button {
+    /* 🔴 ENVOLTURA PARA FORZAR EL BOTÓN EN ROJO (Ver Inventario) */
+    .contenedor-rojo div[data-testid="stButton"] > button {
         background-color: #be123c !important; color: white !important; border: none !important;
+        text-align: center !important; display: block !important; box-shadow: none !important;
     }
-    .contenedor-rojo div.stButton > button:hover { background-color: #9f1239 !important; }
-    .contenedor-rojo div.stButton > button p, .contenedor-rojo div.stButton > button span { color: white !important; }
+    .contenedor-rojo div[data-testid="stButton"] > button:hover { background-color: #9f1239 !important; }
+    .contenedor-rojo div[data-testid="stButton"] > button p, .contenedor-rojo div[data-testid="stButton"] > button span { color: white !important; }
     
-    /* 🟢 FUERZA EL COLOR VERDE EN EL BOTÓN DENTRO DE ESTE CONTENEDOR */
-    .contenedor-verde div.stButton > button {
-        background-color: #10b981 !important; color: white !important; font-size: 18px !important;
-        font-weight: 600 !important; padding: 12px 24px !important; border-radius: 12px !important; border: none !important;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important; text-align: center !important; display: block !important; width: 100% !important;
+    /* 🟢 ENVOLTURA PARA FORZAR EL BOTÓN EN VERDE (Guardar) */
+    .contenedor-verde div[data-testid="stButton"] > button {
+        background-color: #10b981 !important; color: white !important; border: none !important;
+        font-size: 18px !important; font-weight: 700 !important; text-align: center !important; 
+        display: block !important; box-shadow: none !important; padding: 14px 20px !important;
     }
-    .contenedor-verde div.stButton > button:hover { background-color: #059669 !important; color: white !important; }
-    .contenedor-verde div.stButton > button p, .contenedor-verde div.stButton > button span { color: white !important; }
+    .contenedor-verde div[data-testid="stButton"] > button:hover { background-color: #059669 !important; }
+    .contenedor-verde div[data-testid="stButton"] > button p, .contenedor-verde div[data-testid="stButton"] > button span { color: white !important; }
     
-    div.stButton > button[key*="edit_baja_"] {
-        padding: 6px 12px !important; font-size: 12px !important; border-radius: 8px !important; margin: 0 !important;
+    /* Botones pequeños de los historiales */
+    div[data-testid="stButton"] > button[key*="edit_baja_"] {
+        padding: 6px 12px !important; font-size: 12px !important; border-radius: 8px !important; width: auto !important;
     }
     
-    .back-button button {
+    /* Botón Volver superior */
+    .back-button div[data-testid="stButton"] > button {
         background-color: #f1f5f9 !important; color: #475569 !important; padding: 8px 16px !important;
         font-size: 14px !important; border-radius: 10px !important; border: 1px solid #e2e8f0 !important; margin-bottom: 15px !important;
+        width: auto !important; display: inline-block !important; text-align: center !important;
     }
-    .back-button button p, .back-button button span { color: #475569 !important; }
+    .back-button div[data-testid="stButton"] > button p, .back-button div[data-testid="stButton"] > button span { color: #475569 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -151,7 +157,7 @@ if st.session_state.menu_actual == "INICIO":
             st.session_state.menu_actual = "INVENTARIO"
             st.rerun()
             
-        # ENVOLTURA EN CONTENEDOR ROJO
+        # ENVOLTURA EN CONTENEDOR ROJO CON SELECTOR COMPLETO
         st.markdown('<div class="contenedor-rojo">', unsafe_allow_html=True)
         if st.button("📦 Ver Inventario General (Rápido) ➔", use_container_width=True, key="btn_ver_inv"):
             st.session_state.mostrar_vista_rapida = not st.session_state.mostrar_vista_rapida
@@ -236,7 +242,7 @@ elif st.session_state.menu_actual == "BAJAS":
             
         observacion = st.text_area("Observaciones (Opcional) 📝", value=v_bajas["obs"], placeholder="Ej: Ventilador malo...", max_chars=200, key="obs_m")
         
-        # ENVOLTURA EN CONTENEDOR VERDE
+        # ENVOLTURA EN CONTENEDOR VERDE CON SELECTOR DEL ELEMENTO REAL
         st.markdown('<div class="contenedor-verde">', unsafe_allow_html=True)
         guardar = st.button("💾 Guardar Registro de Bajas", use_container_width=True, key="btn_save_bajas")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -352,7 +358,7 @@ elif st.session_state.menu_actual == "INVENTARIO":
                 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # ENVOLTURA EN CONTENEDOR VERDE
+        # ENVOLTURA EN CONTENEDOR VERDE CON SELECTOR DEL ELEMENTO REAL
         st.markdown('<div class="contenedor-verde">', unsafe_allow_html=True)
         guardar_inv = st.button("💾 Guardar Inventario de Huevos", use_container_width=True, key="btn_save_inventario")
         st.markdown('</div>', unsafe_allow_html=True)
